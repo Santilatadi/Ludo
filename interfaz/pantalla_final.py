@@ -1,11 +1,9 @@
 """
 Modulo pantalla_final.py
-Dibuja e interactúa con la Pantalla de Victoria / Finalización (CU-13).
-Anuncia al ganador con una presentación festiva y ofrece opciones para reiniciar o volver al menú.
+Dibuja e interactúa con la Pantalla de Victoria / Finalización (Menu Victoria).
+Adaptado fielmente al diseño de la interfaz de referencia.
 """
 
-import math
-import random
 import pygame
 
 
@@ -14,86 +12,82 @@ class PantallaFinal:
     def __init__(self, pantalla, gestor_partida):
         self.pantalla = pantalla
         self.gestor = gestor_partida
-        self.fuente_titulo = pygame.font.SysFont("Arial", 48, bold=True)
-        self.fuente_sub = pygame.font.SysFont("Arial", 28, bold=True)
-        self.fuente_desc = pygame.font.SysFont("Arial", 20)
-        self.fuente_boton = pygame.font.SysFont("Arial", 22, bold=True)
 
-        # Generación de partículas de confeti animadas
-        self.particulas = []
-        for _ in range(70):
-            self.particulas.append({
-                "x": random.randint(0, 1024),
-                "y": random.randint(-400, 0),
-                "vx": random.uniform(-1, 1),
-                "vy": random.uniform(2, 5),
-                "color": random.choice([
-                    (255, 60, 60), (60, 180, 255), (60, 230, 100), (255, 220, 40), (220, 80, 255)
-                ]),
-                "tam": random.randint(6, 12)
-            })
+        self.fuente_banner = pygame.font.SysFont("Impact", 42, bold=True)
+        if not self.fuente_banner:
+            self.fuente_banner = pygame.font.SysFont("Arial", 40, bold=True)
+
+        self.fuente_sub = pygame.font.SysFont("Arial", 20, bold=True)
+        self.fuente_boton = pygame.font.SysFont("Arial", 20, bold=True)
+
+    def _render_texto_delineado(self, texto, fuente, color_texto, color_borde=(0, 0, 0), grosor=2):
+        surf_base = fuente.render(texto, True, color_texto)
+        w, h = surf_base.get_size()
+        surf_final = pygame.Surface((w + grosor * 2, h + grosor * 2), pygame.SRCALPHA)
+
+        for dx in range(-grosor, grosor + 1):
+            for dy in range(-grosor, grosor + 1):
+                if dx != 0 or dy != 0:
+                    surf_borde = fuente.render(texto, True, color_borde)
+                    surf_final.blit(surf_borde, (dx + grosor, dy + grosor))
+
+        surf_final.blit(surf_base, (grosor, grosor))
+        return surf_final
 
     def dibujar(self):
         ancho, alto = self.pantalla.get_size()
-        self.pantalla.fill((15, 22, 35))
 
-        # Animación de confeti cayendo
-        for p in self.particulas:
-            p["x"] += p["vx"]
-            p["y"] += p["vy"]
-            if p["y"] > alto:
-                p["y"] = random.randint(-50, -10)
-                p["x"] = random.randint(0, ancho)
+        # Capa translúcida sobre la pantalla de juego
+        superficie_oscura = pygame.Surface((ancho, alto), pygame.SRCALPHA)
+        superficie_oscura.fill((10, 15, 25, 170))
+        self.pantalla.blit(superficie_oscura, (0, 0))
 
-            pygame.draw.circle(self.pantalla, p["color"], (int(p["x"]), int(p["y"])), p["tam"])
-
-        # Cuadro de Victoria
-        w_box, h_box = 520, 480
+        # Ventana Modal Amarilla con borde Rojo
+        w_box, h_box = 440, 360
         rect_box = pygame.Rect((ancho - w_box) // 2, (alto - h_box) // 2, w_box, h_box)
-        pygame.draw.rect(self.pantalla, (25, 35, 55), rect_box, border_radius=20)
-        pygame.draw.rect(self.pantalla, (255, 215, 0), rect_box, width=4, border_radius=20)
 
-        # Título y Trofeo
-        txt_trofeo = self.fuente_titulo.render("🏆 VICTORIA 🏆", True, (255, 215, 0))
-        self.pantalla.blit(txt_trofeo, txt_trofeo.get_rect(center=(ancho // 2, rect_box.y + 60)))
+        pygame.draw.rect(self.pantalla, (245, 245, 120), rect_box, border_radius=12)
+        pygame.draw.rect(self.pantalla, (220, 25, 50), rect_box, width=4, border_radius=12)
+
+        # Banner Superior de ¡GANASTE!
+        rect_banner = pygame.Rect(rect_box.x + 20, rect_box.y + 25, rect_box.width - 40, 65)
+        pygame.draw.rect(self.pantalla, (255, 255, 255), rect_banner, border_radius=8)
+        pygame.draw.rect(self.pantalla, (220, 25, 50), rect_banner, width=3, border_radius=8)
+
+        txt_ganaste = self._render_texto_delineado("¡GANASTE!", self.fuente_banner, (255, 255, 255), (220, 25, 50), 3)
+        self.pantalla.blit(txt_ganaste, txt_ganaste.get_rect(center=rect_banner.center))
 
         # Nombre del Ganador
         partida = self.gestor.partidaActual
-        nombre_ganador = partida.ganador.nombre if (partida and partida.ganador) else "Jugador"
-        txt_gan = self.fuente_sub.render(f"¡{nombre_ganador.upper()} GANÓ!", True, (255, 255, 255))
-        self.pantalla.blit(txt_gan, txt_gan.get_rect(center=(ancho // 2, rect_box.y + 130)))
+        nombre_ganador = partida.ganador.nombre if (partida and partida.ganador) else "Jugador 1"
 
-        txt_desc = self.fuente_desc.render("Las 4 fichas llegaron con éxito a la meta.", True, (200, 220, 240))
-        self.pantalla.blit(txt_desc, txt_desc.get_rect(center=(ancho // 2, rect_box.y + 180)))
+        txt_gan = self.fuente_sub.render(f"¡'{nombre_ganador}'", True, (20, 20, 20))
+        txt_gan2 = self.fuente_sub.render("GANÓ LA PARTIDA!", True, (20, 20, 20))
 
-        # Botones
-        pos_y_base = rect_box.y + 240
-        bw, bh = 320, 52
-        bx = (ancho - bw) // 2
+        self.pantalla.blit(txt_gan, txt_gan.get_rect(center=(ancho // 2, rect_box.y + 140)))
+        self.pantalla.blit(txt_gan2, txt_gan2.get_rect(center=(ancho // 2, rect_box.y + 170)))
 
-        self.btn_nueva = pygame.Rect(bx, pos_y_base, bw, bh)
-        self.btn_stats = pygame.Rect(bx, pos_y_base + 70, bw, bh)
-        self.btn_menu = pygame.Rect(bx, pos_y_base + 140, bw, bh)
+        # Botón Volver al Menu blanco con icono circular ↺
+        bw, bh = 260, 52
+        self.btn_menu = pygame.Rect((ancho - bw) // 2, rect_box.bottom - 80, bw, bh)
 
         pos_m = pygame.mouse.get_pos()
-        self._dibujar_boton(self.btn_nueva, "NUEVA PARTIDA", (40, 180, 80), pos_m)
-        self._dibujar_boton(self.btn_stats, "ESTADÍSTICAS", (40, 120, 220), pos_m)
-        self._dibujar_boton(self.btn_menu, "MENÚ PRINCIPAL", (200, 60, 60), pos_m)
+        hover = self.btn_menu.collidepoint(pos_m)
+        color_btn = (235, 235, 235) if hover else (255, 255, 255)
 
-    def _dibujar_boton(self, rect, texto, color_base, pos_mouse):
-        hover = rect.collidepoint(pos_mouse)
-        color = (min(color_base[0] + 30, 255), min(color_base[1] + 30, 255), min(color_base[2] + 30, 255)) if hover else color_base
-        pygame.draw.rect(self.pantalla, color, rect, border_radius=12)
-        pygame.draw.rect(self.pantalla, (255, 255, 255), rect, width=2, border_radius=12)
-        txt = self.fuente_boton.render(texto, True, (255, 255, 255))
-        self.pantalla.blit(txt, txt.get_rect(center=rect.center))
+        pygame.draw.rect(self.pantalla, color_btn, self.btn_menu, border_radius=8)
+        pygame.draw.rect(self.pantalla, (20, 20, 20), self.btn_menu, width=2, border_radius=8)
+
+        txt_m = self.fuente_boton.render("Volver al Menu", True, (20, 20, 20))
+        self.pantalla.blit(txt_m, (self.btn_menu.x + 20, self.btn_menu.centery - txt_m.get_height() // 2))
+
+        # Icono circular azul ↺ a la derecha del botón
+        r_circ = pygame.Rect(self.btn_menu.right - 42, self.btn_menu.centery - 18, 36, 36)
+        pygame.draw.circle(self.pantalla, (40, 150, 240), r_circ.center, 18)
+        txt_icon = self.fuente_sub.render("↺", True, (255, 255, 255))
+        self.pantalla.blit(txt_icon, txt_icon.get_rect(center=r_circ.center))
 
     def manejar_evento(self, evento):
         if evento.type == pygame.MOUSEBUTTONDOWN and evento.button == 1:
-            pos = evento.pos
-            if self.btn_nueva.collidepoint(pos):
-                self.gestor.estado = "CONFIGURACION"
-            elif self.btn_stats.collidepoint(pos):
-                self.gestor.consultarEstadisticas()
-            elif self.btn_menu.collidepoint(pos):
+            if self.btn_menu.collidepoint(evento.pos):
                 self.gestor.cancelarPartida()

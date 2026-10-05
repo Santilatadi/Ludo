@@ -1,12 +1,10 @@
 """
 Modulo menu_principal.py
 Dibuja e interactúa con el Menú Principal del juego Ludo.
-Incluye animaciones de partículas en segundo plano, soporte para pantalla completa,
-tarjetas con estilo glassmorphism y diseño ultramoderno.
+Adaptado al 100% con la interfaz gráfica de Figma y recursos de imagen.
 """
 
-import math
-import random
+import os
 import pygame
 
 
@@ -18,112 +16,109 @@ class MenuPrincipal:
         self.persistencia = persistencia
         self.interfaz_padre = interfaz_padre
 
-        self.fuente_titulo = pygame.font.SysFont("Arial", 54, bold=True)
-        self.fuente_subtitulo = pygame.font.SysFont("Arial", 20)
-        self.fuente_boton = pygame.font.SysFont("Arial", 22, bold=True)
+        # Carga de tipografía personalizada
+        ruta_fuente = "assets/font.ttf"
+        if os.path.exists(ruta_fuente):
+            self.fuente_logo = pygame.font.Font(ruta_fuente, 46)
+            self.fuente_boton = pygame.font.Font(ruta_fuente, 20)
+            self.fuente_sub = pygame.font.Font(ruta_fuente, 16)
+        else:
+            self.fuente_logo = pygame.font.SysFont("Impact", 44, bold=True)
+            self.fuente_boton = pygame.font.SysFont("Arial", 20, bold=True)
+            self.fuente_sub = pygame.font.SysFont("Arial", 16)
 
-        # Inicialización de partículas flotantes animadas de fondo
-        self.particulas_fondo = []
-        for _ in range(45):
-            self.particulas_fondo.append({
-                "x": random.randint(0, 1920),
-                "y": random.randint(0, 1080),
-                "vx": random.uniform(-0.5, 0.5),
-                "vy": random.uniform(-0.8, -0.2),
-                "tam": random.randint(4, 10),
-                "color": random.choice([
-                    (220, 50, 50, 80), (40, 120, 220, 80), (40, 180, 80, 80), (240, 190, 40, 80)
-                ]),
-                "angulo": random.uniform(0, 360)
-            })
+        # Cargar ilustración de fondo de dados y tablero si existe
+        self.img_artwork = None
+        ruta_art = "assets/ludo_artwork.png"
+        if os.path.exists(ruta_art):
+            try:
+                self.img_artwork = pygame.image.load(ruta_art).convert_alpha()
+            except Exception:
+                self.img_artwork = None
+
+    def _render_texto_delineado(self, texto, fuente, color_texto, color_borde=(0, 0, 0), grosor=1):
+        if grosor <= 0 or color_borde is None or color_texto == color_borde:
+            return fuente.render(texto, True, color_texto)
+
+        surf_base = fuente.render(texto, True, color_texto)
+        w, h = surf_base.get_size()
+        surf_final = pygame.Surface((w + grosor * 2, h + grosor * 2), pygame.SRCALPHA)
+
+        offsets = [
+            (-grosor, 0), (grosor, 0), (0, -grosor), (0, grosor),
+            (-grosor, -grosor), (-grosor, grosor), (grosor, -grosor), (grosor, grosor)
+        ]
+        surf_borde = fuente.render(texto, True, color_borde)
+        for dx, dy in offsets:
+            surf_final.blit(surf_borde, (dx + grosor, dy + grosor))
+
+        surf_final.blit(surf_base, (grosor, grosor))
+        return surf_final
 
     def dibujar(self):
         ancho, alto = self.pantalla.get_size()
-        self.pantalla.fill((12, 18, 30))  # Fondo oscuro profundo
+        # Canvas de fondo rosa / magenta exacto
+        self.pantalla.fill((226, 120, 190))
 
-        # Dibuja partículas animadas de fondo
-        self._dibujar_particulas_fondo(ancho, alto)
+        # 1. Logo L U D O en la parte superior central/izquierda
+        self._dibujar_logo_ludo(ancho // 4 + 40, 80)
 
-        # Tarjeta central con sombra (Glassmorphism)
-        w_card, h_card = 480, 560
-        rect_card = pygame.Rect((ancho - w_card) // 2, (alto - h_card) // 2, w_card, h_card)
-        pygame.draw.rect(self.pantalla, (22, 32, 52), rect_card, border_radius=20)
-        pygame.draw.rect(self.pantalla, (50, 75, 115), rect_card, width=2, border_radius=20)
+        # 2. Botones de menú a la izquierda
+        w_btn, h_btn = 230, 50
+        pos_x_btn = max(40, ancho // 10)
+        pos_y_base = alto // 2 - 40
 
-        # Título principal con brillo
-        txt_titulo = self.fuente_titulo.render("JUEGO LUDO", True, (255, 255, 255))
-        rect_titulo = txt_titulo.get_rect(center=(ancho // 2, rect_card.y + 60))
-        self.pantalla.blit(txt_titulo, rect_titulo)
+        self.btn_nueva = pygame.Rect(pos_x_btn, pos_y_base, w_btn, h_btn)
+        self.btn_continuar = pygame.Rect(pos_x_btn, pos_y_base + 70, w_btn, h_btn)
+        self.btn_salir = pygame.Rect(pos_x_btn, pos_y_base + 140, w_btn, h_btn)
 
-        txt_sub = self.fuente_subtitulo.render("Edición Ultramoderna con Bots & Animaciones", True, (170, 200, 235))
-        rect_sub = txt_sub.get_rect(center=(ancho // 2, rect_card.y + 110))
-        self.pantalla.blit(txt_sub, rect_sub)
+        pos_m = pygame.mouse.get_pos()
+        self._dibujar_boton_menu(self.btn_nueva, "NUEVA PARTIDA", pos_m)
+        self._dibujar_boton_menu(self.btn_continuar, "CONTINUAR PARTIDA", pos_m)
+        self._dibujar_boton_menu(self.btn_salir, "SALIR AL ESCRITORIO", pos_m)
 
-        # Botones de navegación
-        pos_y_base = rect_card.y + 160
-        ancho_boton, alto_boton = 360, 54
-        pos_x = (ancho - ancho_boton) // 2
+        # 3. Ilustración 3D a la derecha
+        if self.img_artwork:
+            w_target = int(ancho * 0.46)
+            h_target = int(w_target * (764 / 1024))
+            img_scaled = pygame.transform.smoothscale(self.img_artwork, (w_target, h_target))
+            pos_x_art = ancho - w_target - 30
+            pos_y_art = (alto - h_target) // 2 + 30
+            self.pantalla.blit(img_scaled, (pos_x_art, pos_y_art))
 
-        self.btn_nueva = pygame.Rect(pos_x, pos_y_base, ancho_boton, alto_boton)
-        self.btn_reanudar = pygame.Rect(pos_x, pos_y_base + 75, ancho_boton, alto_boton)
-        self.btn_reglas = pygame.Rect(pos_x, pos_y_base + 150, ancho_boton, alto_boton)
-        self.btn_fullscreen = pygame.Rect(pos_x, pos_y_base + 225, ancho_boton, alto_boton)
-        self.btn_salir = pygame.Rect(pos_x, pos_y_base + 300, ancho_boton, alto_boton)
-
-        pos_mouse = pygame.mouse.get_pos()
-
-        # Botón Nueva Partida
-        self._dibujar_boton(self.btn_nueva, "NUEVA PARTIDA", (40, 180, 80), pos_mouse)
-
-        # Botón Reanudar Partida
-        tiene_guardada = self.persistencia.existe_partida_guardada()
-        color_reanudar = (40, 120, 220) if tiene_guardada else (80, 95, 120)
-        self._dibujar_boton(self.btn_reanudar, "REANUDAR PARTIDA", color_reanudar, pos_mouse, habilitado=tiene_guardada)
-
-        # Botón Reglas
-        self._dibujar_boton(self.btn_reglas, "REGLAS", (240, 160, 40), pos_mouse)
-
-        # Botón Pantalla Completa
-        es_fs = self.interfaz_padre and self.interfaz_padre.pantalla_completa
-        txt_fs = "⛶ PANTALLA COMPLETA (F11)" if not es_fs else "⛶ MODO VENTANA (F11)"
-        self._dibujar_boton(self.btn_fullscreen, txt_fs, (140, 80, 200), pos_mouse)
-
-        # Botón Salir
-        self._dibujar_boton(self.btn_salir, "SALIR", (220, 60, 60), pos_mouse)
-
-        # Mensajes de estado / error
+        # Mensaje de error si existe
         if self.gestor.mensaje_error:
-            fuente_err = pygame.font.SysFont("Arial", 16, bold=True)
-            txt_err = fuente_err.render(self.gestor.mensaje_error, True, (255, 100, 100))
-            rect_err = txt_err.get_rect(center=(ancho // 2, rect_card.bottom - 25))
-            self.pantalla.blit(txt_err, rect_err)
+            txt_err = self._render_texto_delineado(self.gestor.mensaje_error, self.fuente_sub, (255, 100, 100))
+            self.pantalla.blit(txt_err, txt_err.get_rect(center=(ancho // 2, alto - 25)))
 
-    def _dibujar_particulas_fondo(self, ancho, alto):
-        for p in self.particulas_fondo:
-            p["x"] += p["vx"]
-            p["y"] += p["vy"]
+    def _dibujar_logo_ludo(self, cx, cy):
+        letras = [('L', (40, 120, 220)), ('U', (220, 50, 50)), ('D', (40, 180, 80)), ('O', (190, 210, 40))]
+        t_radius = 34
+        spacing = 76
+        total_w = len(letras) * spacing
+        start_x = cx - total_w // 2 + spacing // 2
 
-            if p["y"] < -20:
-                p["y"] = alto + 20
-                p["x"] = random.randint(0, ancho)
+        # Recuadro azul celeste bordiando el logo
+        rect_marco = pygame.Rect(cx - total_w // 2 - 15, cy - t_radius - 12, total_w + 30, t_radius * 2 + 24)
+        pygame.draw.rect(self.pantalla, (80, 160, 240), rect_marco, width=2, border_radius=10)
 
-            # Dibujar partícula con un brillo suave
-            s = pygame.Surface((p["tam"] * 2, p["tam"] * 2), pygame.SRCALPHA)
-            pygame.draw.circle(s, p["color"], (p["tam"], p["tam"]), p["tam"])
-            self.pantalla.blit(s, (int(p["x"]), int(p["y"])))
+        for i, (letra, col) in enumerate(letras):
+            px = start_x + i * spacing
+            pygame.draw.circle(self.pantalla, col, (px, cy), t_radius)
+            pygame.draw.circle(self.pantalla, (255, 255, 255), (px, cy), t_radius, width=3)
 
-    def _dibujar_boton(self, rect, texto, color_base, pos_mouse, habilitado=True):
-        hover = rect.collidepoint(pos_mouse) and habilitado
-        color = (min(color_base[0] + 35, 255), min(color_base[1] + 35, 255), min(color_base[2] + 35, 255)) if hover else color_base
+            txt = self._render_texto_delineado(letra, self.fuente_logo, (255, 255, 255), (0, 0, 0), 2)
+            self.pantalla.blit(txt, txt.get_rect(center=(px, cy)))
 
-        # Si hay hover se aplica una elevación suave
-        rect_dibujo = rect.move(0, -3) if hover else rect
-        pygame.draw.rect(self.pantalla, color, rect_dibujo, border_radius=12)
-        pygame.draw.rect(self.pantalla, (255, 255, 255), rect_dibujo, width=2, border_radius=12)
+    def _dibujar_boton_menu(self, rect, texto, pos_mouse):
+        hover = rect.collidepoint(pos_mouse)
+        color = (25, 75, 175) if hover else (16, 50, 135)
 
-        txt_surf = self.fuente_boton.render(texto, True, (255, 255, 255) if habilitado else (160, 160, 160))
-        rect_txt = txt_surf.get_rect(center=rect_dibujo.center)
-        self.pantalla.blit(txt_surf, rect_txt)
+        pygame.draw.rect(self.pantalla, color, rect, border_radius=6)
+        pygame.draw.rect(self.pantalla, (20, 20, 20), rect, width=2, border_radius=6)
+
+        txt_surf = self._render_texto_delineado(texto, self.fuente_boton, (255, 255, 255), (0, 0, 0), 2)
+        self.pantalla.blit(txt_surf, txt_surf.get_rect(center=rect.center))
 
     def manejar_evento(self, evento):
         if evento.type == pygame.MOUSEBUTTONDOWN and evento.button == 1:
@@ -131,18 +126,9 @@ class MenuPrincipal:
             if self.btn_nueva.collidepoint(pos):
                 self.gestor.mensaje_error = ""
                 self.gestor.estado = "CONFIGURACION"
-            elif self.btn_reanudar.collidepoint(pos) and self.persistencia.existe_partida_guardada():
-                partida, msg = self.persistencia.cargarPartida()
-                if partida:
-                    self.gestor.partidaActual = partida
-                    self.gestor.estado = "JUEGO"
-                    self.gestor.mensaje_error = ""
-                else:
-                    self.gestor.mensaje_error = msg
-            elif self.btn_reglas.collidepoint(pos):
-                self.gestor.consultarReglas()
-            elif self.btn_fullscreen.collidepoint(pos) and self.interfaz_padre:
-                self.interfaz_padre.toggle_pantalla_completa()
+            elif self.btn_continuar.collidepoint(pos):
+                self.gestor.mensaje_error = ""
+                self.gestor.estado = "CONTINUAR"
             elif self.btn_salir.collidepoint(pos):
                 pygame.quit()
                 exit()

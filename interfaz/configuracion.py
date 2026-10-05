@@ -1,9 +1,15 @@
 """
 Modulo configuracion.py
-Dibuja e interactúa con la Pantalla de Configuración de Nueva Partida (CU-01 a CU-05).
-Permite seleccionar cantidad total de jugadores (2 a 4), alternar entre Jugador Humano y Bot (IA),
-ingresar nombres y seleccionar colores únicos con una estética visual moderna.
+Dibuja e interactúa con la Pantalla de Configuración de Nueva Partida.
+Adaptado 100% al diseño exacto de Figma.
 """
+
+import os
+import sys
+
+directorio_raiz = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if directorio_raiz not in sys.path:
+    sys.path.insert(0, directorio_raiz)
 
 import pygame
 from modelos.color import Color
@@ -15,139 +21,180 @@ class PantallaConfiguracion:
     def __init__(self, pantalla, gestor_partida):
         self.pantalla = pantalla
         self.gestor = gestor_partida
-        self.fuente_titulo = pygame.font.SysFont("Arial", 40, bold=True)
-        self.fuente_sub = pygame.font.SysFont("Arial", 20, bold=True)
-        self.fuente_label = pygame.font.SysFont("Arial", 18)
-        self.fuente_boton = pygame.font.SysFont("Arial", 20, bold=True)
-        self.fuente_badge = pygame.font.SysFont("Arial", 14, bold=True)
+
+        ruta_fuente = "assets/font.ttf"
+        if os.path.exists(ruta_fuente):
+            self.fuente_titulo = pygame.font.Font(ruta_fuente, 42)
+            self.fuente_sub = pygame.font.Font(ruta_fuente, 20)
+            self.fuente_label = pygame.font.Font(ruta_fuente, 18)
+            self.fuente_boton = pygame.font.Font(ruta_fuente, 26)
+            self.fuente_pill = pygame.font.Font(ruta_fuente, 16)
+        else:
+            self.fuente_titulo = pygame.font.SysFont("Impact", 40, bold=True)
+            self.fuente_sub = pygame.font.SysFont("Arial", 20, bold=True)
+            self.fuente_label = pygame.font.SysFont("Arial", 18, bold=True)
+            self.fuente_boton = pygame.font.SysFont("Arial", 24, bold=True)
+            self.fuente_pill = pygame.font.SysFont("Arial", 16, bold=True)
 
         self.cant_jugadores = 2
-        self.es_bot_lista = [False, True, True, True]  # Jugador 1 Humano por defecto, resto Bots
-        self.nombres = ["Santiago", "Bot 1", "Bot 2", "Bot 3"]
+        self.es_bot_lista = [False, True, True, True]
+        self.nombres = ["Jugador 1", "Jugador 2", "Jugador 3", "Jugador 4"]
         self.colores = [Color.ROJO, Color.AZUL, Color.VERDE, Color.AMARILLO]
         self.campo_activo = None
         self.mensaje_error = ""
 
-    def dibujar(self):
-        # Fondo degradado azul noche moderno
-        self.pantalla.fill((15, 22, 38))
-        ancho, alto = self.pantalla.get_size()
+    def _render_texto_delineado(self, texto, fuente, color_texto, color_borde=(0, 0, 0), grosor=1):
+        if grosor <= 0 or color_borde is None or color_texto == color_borde:
+            return fuente.render(texto, True, color_texto)
 
-        # Encabezado
-        txt_tit = self.fuente_titulo.render("CONFIGURACIÓN DE PARTIDA", True, (255, 255, 255))
-        rect_tit = txt_tit.get_rect(center=(ancho // 2, 45))
+        surf_base = fuente.render(texto, True, color_texto)
+        w, h = surf_base.get_size()
+        surf_final = pygame.Surface((w + grosor * 2, h + grosor * 2), pygame.SRCALPHA)
+
+        offsets = [
+            (-grosor, 0), (grosor, 0), (0, -grosor), (0, grosor),
+            (-grosor, -grosor), (-grosor, grosor), (grosor, -grosor), (grosor, grosor)
+        ]
+        surf_borde = fuente.render(texto, True, color_borde)
+        for dx, dy in offsets:
+            surf_final.blit(surf_borde, (dx + grosor, dy + grosor))
+
+        surf_final.blit(surf_base, (grosor, grosor))
+        return surf_final
+
+    def dibujar(self):
+        ancho, alto = self.pantalla.get_size()
+        # Canvas Rosa / Magenta
+        self.pantalla.fill((226, 120, 190))
+
+        # Ventana modal azul con borde rojo brillante
+        w_win, h_win = min(680, ancho - 60), min(520, alto - 60)
+        rect_win = pygame.Rect((ancho - w_win) // 2, (alto - h_win) // 2, w_win, h_win)
+
+        pygame.draw.rect(self.pantalla, (16, 56, 168), rect_win, border_radius=10)
+        pygame.draw.rect(self.pantalla, (220, 20, 60), rect_win, width=4, border_radius=10)
+
+        # Encabezado "NUEVA PARTIDA"
+        txt_tit = self._render_texto_delineado("NUEVA PARTIDA", self.fuente_titulo, (255, 255, 255), (0, 0, 0), 3)
+        rect_tit = txt_tit.get_rect(center=(ancho // 2, rect_win.y + 45))
         self.pantalla.blit(txt_tit, rect_tit)
 
-        # 1. Selector de Cantidad de Jugadores
-        txt_cant_lbl = self.fuente_sub.render("Cantidad Total de Jugadores:", True, (180, 210, 240))
-        self.pantalla.blit(txt_cant_lbl, (ancho // 2 - 220, 95))
-
-        self.btn_menos = pygame.Rect(ancho // 2 + 70, 90, 40, 40)
-        self.btn_mas = pygame.Rect(ancho // 2 + 170, 90, 40, 40)
+        # Doble subrayado debajo del título
+        y_line = rect_tit.bottom - 4
+        pygame.draw.line(self.pantalla, (255, 255, 255), (rect_tit.x + 10, y_line), (rect_tit.right - 10, y_line), 2)
+        pygame.draw.line(self.pantalla, (255, 255, 255), (rect_tit.x + 10, y_line + 4), (rect_tit.right - 10, y_line + 4), 2)
 
         pos_m = pygame.mouse.get_pos()
-        self._dibujar_boton_peq(self.btn_menos, "-", (60, 80, 120), pos_m)
-        self._dibujar_boton_peq(self.btn_mas, "+", (60, 80, 120), pos_m)
 
-        txt_cant = self.fuente_titulo.render(str(self.cant_jugadores), True, (255, 215, 0))
-        self.pantalla.blit(txt_cant, txt_cant.get_rect(center=(ancho // 2 + 135, 108)))
+        # 1. Cantidad Jugadores (izquierda)
+        txt_c1 = self._render_texto_delineado("Cantidad", self.fuente_sub, (255, 255, 255), (0, 0, 0), 2)
+        txt_c2 = self._render_texto_delineado("Jugadores", self.fuente_sub, (255, 255, 255), (0, 0, 0), 2)
+        self.pantalla.blit(txt_c1, (rect_win.x + 45, rect_win.y + 105))
+        self.pantalla.blit(txt_c2, (rect_win.x + 45, rect_win.y + 128))
 
-        # 2. Configuración por Jugador (Humano/Bot, Nombre y Color)
-        pos_y_base = 160
-        colores_lista = Color.obtener_todos()
+        # Botón - (Rojo)
+        self.btn_menos = pygame.Rect(rect_win.x + 215, rect_win.y + 122, 22, 22)
+        pygame.draw.rect(self.pantalla, (220, 30, 40), self.btn_menos)
+        txt_m = self._render_texto_delineado("-", self.fuente_sub, (255, 255, 255), (0, 0, 0), 2)
+        self.pantalla.blit(txt_m, txt_m.get_rect(center=self.btn_menos.center))
+
+        # Círculo central rojo con la cantidad
+        rect_circ_cant = pygame.Rect(rect_win.x + 250, rect_win.y + 105, 52, 52)
+        pygame.draw.circle(self.pantalla, (220, 30, 40), rect_circ_cant.center, 26)
+        pygame.draw.circle(self.pantalla, (20, 20, 20), rect_circ_cant.center, 26, width=2)
+        txt_c = self._render_texto_delineado(str(self.cant_jugadores), self.fuente_titulo, (255, 255, 255), (0, 0, 0), 3)
+        self.pantalla.blit(txt_c, txt_c.get_rect(center=rect_circ_cant.center))
+
+        # Botón + (Rojo)
+        self.btn_mas = pygame.Rect(rect_win.x + 315, rect_win.y + 122, 22, 22)
+        pygame.draw.rect(self.pantalla, (220, 30, 40), self.btn_mas)
+        txt_p = self._render_texto_delineado("+", self.fuente_sub, (255, 255, 255), (0, 0, 0), 2)
+        self.pantalla.blit(txt_p, txt_p.get_rect(center=self.btn_mas.center))
+
+        # 2. Jugadores (Etiqueta + 4 Píldoras en cuadrícula 2x2)
+        txt_j_lbl = self._render_texto_delineado("Jugadores", self.fuente_sub, (255, 255, 255), (0, 0, 0), 2)
+        self.pantalla.blit(txt_j_lbl, (rect_win.x + 45, rect_win.y + 185))
 
         self.rects_nombres = []
-        self.rects_colores = []
-        self.rects_toggle_bot = []
+        self.rects_arrow_left = []
+        self.rects_arrow_right = []
 
-        for i in range(self.cant_jugadores):
-            pos_y = pos_y_base + i * 110
+        # Bordes coloridos de cada entrada según Figma:
+        # P1: Rojo (#FF0000), P2: Verde (#00C853), P3: Azul (#0091EA), P4: Amarillo (#FFD600)
+        colores_borde_pildoras = [(255, 0, 0), (0, 200, 83), (0, 145, 234), (255, 214, 0)]
 
-            # Tarjeta de jugador (Glassmorphism card)
-            rect_card = pygame.Rect(80, pos_y, ancho - 160, 95)
-            pygame.draw.rect(self.pantalla, (25, 36, 58), rect_card, border_radius=12)
-            pygame.draw.rect(self.pantalla, (45, 65, 100), rect_card, width=2, border_radius=12)
+        w_pill, h_pill = 220, 38
+        offsets_grid = [
+            (rect_win.x + 80, rect_win.y + 225),   # Top Left (P1)
+            (rect_win.x + 360, rect_win.y + 225),  # Top Right (P2)
+            (rect_win.x + 80, rect_win.y + 285),   # Bottom Left (P3)
+            (rect_win.x + 360, rect_win.y + 285)   # Bottom Right (P4)
+        ]
 
-            # Etiqueta
-            lbl_j = self.fuente_sub.render(f"Jugador {i + 1}", True, (255, 255, 255))
-            self.pantalla.blit(lbl_j, (105, pos_y + 15))
+        for i in range(4):
+            if i >= self.cant_jugadores:
+                # Ocultar o deshabilitar jugadores que excedan la cantidad seleccionada
+                continue
 
-            # Botón Toggle Humano / Bot
-            rect_toggle = pygame.Rect(205, pos_y + 12, 115, 32)
-            self.rects_toggle_bot.append(rect_toggle)
-            es_bot = self.es_bot_lista[i]
-            color_toggle = (140, 60, 200) if es_bot else (40, 180, 90)
-            texto_toggle = "🤖 BOT" if es_bot else "👤 HUMANO"
+            rx, py = offsets_grid[i]
+            rect_pill = pygame.Rect(rx, py, w_pill, h_pill)
+            self.rects_nombres.append(rect_pill)
 
-            pygame.draw.rect(self.pantalla, color_toggle, rect_toggle, border_radius=8)
-            pygame.draw.rect(self.pantalla, (255, 255, 255), rect_toggle, width=1, border_radius=8)
-            txt_t = self.fuente_badge.render(texto_toggle, True, (255, 255, 255))
-            self.pantalla.blit(txt_t, txt_t.get_rect(center=rect_toggle.center))
+            # Fondo blanco de píldora
+            pygame.draw.rect(self.pantalla, (255, 255, 255), rect_pill, border_radius=19)
 
-            # Campo de entrada de Nombre
-            rect_nombre = pygame.Rect(340, pos_y + 12, 220, 36)
-            self.rects_nombres.append(rect_nombre)
-            es_activo = (self.campo_activo == i)
-            color_borde = (255, 215, 0) if es_activo else (80, 100, 140)
+            # Borde colorido especifico de cada jugador
+            col_borde = colores_borde_pildoras[i]
+            pygame.draw.rect(self.pantalla, col_borde, rect_pill, width=3, border_radius=19)
 
-            pygame.draw.rect(self.pantalla, (18, 26, 42), rect_nombre, border_radius=6)
-            pygame.draw.rect(self.pantalla, color_borde, rect_nombre, width=2, border_radius=6)
+            # Flecha izquierda
+            r_left = pygame.Rect(rx - 22, py + 8, 20, 22)
+            self.rects_arrow_left.append(r_left)
+            pygame.draw.polygon(self.pantalla, (200, 200, 200), [(r_left.right, r_left.y), (r_left.x, r_left.centery), (r_left.right, r_left.bottom)])
+            pygame.draw.polygon(self.pantalla, (20, 20, 20), [(r_left.right, r_left.y), (r_left.x, r_left.centery), (r_left.right, r_left.bottom)], width=2)
 
-            txt_nom = self.fuente_label.render(self.nombres[i], True, (240, 240, 240))
-            self.pantalla.blit(txt_nom, (rect_nombre.x + 10, rect_nombre.y + 7))
+            # Flecha derecha
+            r_right = pygame.Rect(rx + w_pill + 2, py + 8, 20, 22)
+            self.rects_arrow_right.append(r_right)
+            pygame.draw.polygon(self.pantalla, (200, 200, 200), [(r_right.x, r_right.y), (r_right.right, r_right.centery), (r_right.x, r_right.bottom)])
+            pygame.draw.polygon(self.pantalla, (20, 20, 20), [(r_right.x, r_right.y), (r_right.right, r_right.centery), (r_right.x, r_right.bottom)], width=2)
 
-            # Selector de Color
-            lbl_c = self.fuente_label.render("Color:", True, (180, 210, 240))
-            self.pantalla.blit(lbl_c, (580, pos_y + 18))
+            # Nombre dentro de la píldora
+            nom_str = self.nombres[i]
+            if self.es_bot_lista[i]:
+                nom_str += " (Bot)"
 
-            opciones_color_j = []
-            for col_idx, col in enumerate(colores_lista):
-                rect_col = pygame.Rect(640 + col_idx * 70, pos_y + 12, 60, 36)
-                opciones_color_j.append((rect_col, col))
-                es_sel = (self.colores[i] == col)
-
-                color_rgb = col.obtener_rgb()
-                pygame.draw.rect(self.pantalla, color_rgb, rect_col, border_radius=6)
-                if es_sel:
-                    pygame.draw.rect(self.pantalla, (255, 255, 255), rect_col, width=4, border_radius=6)
-                else:
-                    pygame.draw.rect(self.pantalla, (40, 40, 40), rect_col, width=1, border_radius=6)
-
-            self.rects_colores.append(opciones_color_j)
+            txt_nom = self.fuente_pill.render(nom_str, True, (20, 20, 20))
+            self.pantalla.blit(txt_nom, txt_nom.get_rect(center=rect_pill.center))
 
         # Mensaje de Error
         if self.mensaje_error:
             txt_err = self.fuente_label.render(self.mensaje_error, True, (255, 100, 100))
-            self.pantalla.blit(txt_err, txt_err.get_rect(center=(ancho // 2, alto - 105)))
+            self.pantalla.blit(txt_err, txt_err.get_rect(center=(ancho // 2, rect_win.bottom - 95)))
 
-        # Botones Inferiores: INICIAR y VOLVER
-        self.btn_iniciar = pygame.Rect(ancho // 2 - 190, alto - 75, 180, 50)
-        self.btn_volver = pygame.Rect(ancho // 2 + 10, alto - 75, 180, 50)
+        # Botón INICIAR (Rojo con borde Amarillo como Figma)
+        bw_btn, bh_btn = 220, 54
+        self.btn_iniciar = pygame.Rect((ancho - bw_btn) // 2, rect_win.bottom - 75, bw_btn, bh_btn)
 
-        self._dibujar_boton_principal(self.btn_iniciar, "INICIAR PARTIDA", (40, 180, 80), pos_m)
-        self._dibujar_boton_principal(self.btn_volver, "VOLVER", (200, 60, 60), pos_m)
+        hover = self.btn_iniciar.collidepoint(pos_m)
+        color_btn = (245, 40, 40) if hover else (225, 30, 30)
 
-    def _dibujar_boton_peq(self, rect, texto, color_base, pos_mouse):
-        hover = rect.collidepoint(pos_mouse)
-        color = (min(color_base[0] + 30, 255), min(color_base[1] + 30, 255), min(color_base[2] + 30, 255)) if hover else color_base
-        pygame.draw.rect(self.pantalla, color, rect, border_radius=8)
-        pygame.draw.rect(self.pantalla, (255, 255, 255), rect, width=2, border_radius=8)
-        txt = self.fuente_sub.render(texto, True, (255, 255, 255))
-        self.pantalla.blit(txt, txt.get_rect(center=rect.center))
+        pygame.draw.rect(self.pantalla, color_btn, self.btn_iniciar, border_radius=6)
+        pygame.draw.rect(self.pantalla, (255, 230, 0), self.btn_iniciar, width=4, border_radius=6)
 
-    def _dibujar_boton_principal(self, rect, texto, color_base, pos_mouse):
-        hover = rect.collidepoint(pos_mouse)
-        color = (min(color_base[0] + 30, 255), min(color_base[1] + 30, 255), min(color_base[2] + 30, 255)) if hover else color_base
-        pygame.draw.rect(self.pantalla, color, rect, border_radius=10)
-        pygame.draw.rect(self.pantalla, (255, 255, 255), rect, width=2, border_radius=10)
-        txt = self.fuente_boton.render(texto, True, (255, 255, 255))
-        self.pantalla.blit(txt, txt.get_rect(center=rect.center))
+        txt_ini = self._render_texto_delineado("INICIAR", self.fuente_boton, (255, 255, 255), (0, 0, 0), 3)
+        self.pantalla.blit(txt_ini, txt_ini.get_rect(center=self.btn_iniciar.center))
+
+        # Botón Volver (X)
+        self.btn_volver = pygame.Rect(rect_win.x + 15, rect_win.y + 15, 32, 32)
+        pygame.draw.rect(self.pantalla, (220, 30, 40), self.btn_volver, border_radius=4)
+        txt_v = self._render_texto_delineado("X", self.fuente_sub, (255, 255, 255), (0, 0, 0), 2)
+        self.pantalla.blit(txt_v, txt_v.get_rect(center=self.btn_volver.center))
 
     def manejar_evento(self, evento):
         if evento.type == pygame.MOUSEBUTTONDOWN and evento.button == 1:
             pos = evento.pos
 
-            # Botones de cantidad de jugadores
             if self.btn_menos.collidepoint(pos):
                 if self.cant_jugadores > 2:
                     self.cant_jugadores -= 1
@@ -158,9 +205,9 @@ class PantallaConfiguracion:
                     self.cant_jugadores += 1
                     self.mensaje_error = ""
 
-            # Clic en botones Toggle Humano / Bot
-            for i, rect_t in enumerate(self.rects_toggle_bot):
-                if rect_t.collidepoint(pos):
+            # Clic en flechas de píldoras
+            for i, r_l in enumerate(self.rects_arrow_left):
+                if r_l.collidepoint(pos):
                     self.es_bot_lista[i] = not self.es_bot_lista[i]
                     if self.es_bot_lista[i]:
                         self.nombres[i] = f"Bot {i + 1}"
@@ -169,26 +216,26 @@ class PantallaConfiguracion:
                             self.nombres[i] = f"Jugador {i + 1}"
                     self.mensaje_error = ""
 
-            # Clic en entrada de texto
+            for i, r_r in enumerate(self.rects_arrow_right):
+                if r_r.collidepoint(pos):
+                    self.es_bot_lista[i] = not self.es_bot_lista[i]
+                    if self.es_bot_lista[i]:
+                        self.nombres[i] = f"Bot {i + 1}"
+                    else:
+                        if self.nombres[i].startswith("Bot"):
+                            self.nombres[i] = f"Jugador {i + 1}"
+                    self.mensaje_error = ""
+
             self.campo_activo = None
             for idx, r_nom in enumerate(self.rects_nombres):
                 if r_nom.collidepoint(pos):
                     self.campo_activo = idx
                     break
 
-            # Clic en selector de color
-            for i, opciones in enumerate(self.rects_colores):
-                for rect_c, col in opciones:
-                    if rect_c.collidepoint(pos):
-                        self.colores[i] = col
-                        self.mensaje_error = ""
-
-            # Botón Iniciar
             if self.btn_iniciar.collidepoint(pos):
                 if self._validar_configuracion():
                     self._crear_y_comenzar_partida()
 
-            # Botón Volver
             elif self.btn_volver.collidepoint(pos):
                 self.gestor.estado = "MENU"
 
@@ -204,22 +251,13 @@ class PantallaConfiguracion:
 
     def _validar_configuracion(self) -> bool:
         nombres_activos = [self.nombres[i].strip() for i in range(self.cant_jugadores)]
-
-        # Validar nombres vacíos
         for i, nom in enumerate(nombres_activos):
             if not nom:
                 self.mensaje_error = f"El nombre del Jugador {i + 1} no puede estar vacío."
                 return False
 
-        # Validar nombres repetidos
         if len(nombres_activos) != len(set(nombres_activos)):
-            self.mensaje_error = "No se permiten nombres repetidos entre los jugadores."
-            return False
-
-        # Validar colores repetidos
-        colores_activos = [self.colores[i] for i in range(self.cant_jugadores)]
-        if len(colores_activos) != len(set(colores_activos)):
-            self.mensaje_error = "Cada jugador debe tener un color diferente. Cambia los colores repetidos."
+            self.mensaje_error = "No se permiten nombres repetidos."
             return False
 
         self.mensaje_error = ""

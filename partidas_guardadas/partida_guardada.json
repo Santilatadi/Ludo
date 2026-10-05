@@ -1,51 +1,51 @@
 {
-    "cantidadJugadores": 4,
+    "cantidadJugadores": 2,
     "estado": "EN_CURSO",
     "turnoActual": 0,
-    "dado": 1,
+    "dado": 0,
     "consecutivoSeis": 0,
     "dado_lanzado": false,
     "esperando_movimiento": false,
-    "mensaje_estado": "Turno de Santiago. ¡Lanza el dado!",
+    "mensaje_estado": "¡Comienza la partida! Turno de Santiago.",
     "ganador": null,
     "jugadores": [
         {
             "nombre": "Santiago",
-            "color": "ROJO",
+            "color": "VERDE",
             "es_bot": false,
             "fichas": [
                 {
                     "id_ficha": 1,
-                    "color": "ROJO",
-                    "posicion": 10,
-                    "enBase": false,
+                    "color": "VERDE",
+                    "posicion": 0,
+                    "enBase": true,
                     "enMeta": false
                 },
                 {
                     "id_ficha": 2,
-                    "color": "ROJO",
-                    "posicion": 1,
-                    "enBase": false,
+                    "color": "VERDE",
+                    "posicion": 0,
+                    "enBase": true,
                     "enMeta": false
                 },
                 {
                     "id_ficha": 3,
-                    "color": "ROJO",
+                    "color": "VERDE",
                     "posicion": 0,
                     "enBase": true,
                     "enMeta": false
                 },
                 {
                     "id_ficha": 4,
-                    "color": "ROJO",
-                    "posicion": 1,
-                    "enBase": false,
+                    "color": "VERDE",
+                    "posicion": 0,
+                    "enBase": true,
                     "enMeta": false
                 }
             ]
         },
         {
-            "nombre": "Bot 2",
+            "nombre": "Bot 1",
             "color": "AZUL",
             "es_bot": true,
             "fichas": [
@@ -73,76 +73,6 @@
                 {
                     "id_ficha": 4,
                     "color": "AZUL",
-                    "posicion": 0,
-                    "enBase": true,
-                    "enMeta": false
-                }
-            ]
-        },
-        {
-            "nombre": "Bot 3",
-            "color": "VERDE",
-            "es_bot": true,
-            "fichas": [
-                {
-                    "id_ficha": 1,
-                    "color": "VERDE",
-                    "posicion": 5,
-                    "enBase": false,
-                    "enMeta": false
-                },
-                {
-                    "id_ficha": 2,
-                    "color": "VERDE",
-                    "posicion": 0,
-                    "enBase": true,
-                    "enMeta": false
-                },
-                {
-                    "id_ficha": 3,
-                    "color": "VERDE",
-                    "posicion": 0,
-                    "enBase": true,
-                    "enMeta": false
-                },
-                {
-                    "id_ficha": 4,
-                    "color": "VERDE",
-                    "posicion": 0,
-                    "enBase": true,
-                    "enMeta": false
-                }
-            ]
-        },
-        {
-            "nombre": "Bot 4",
-            "color": "AMARILLO",
-            "es_bot": true,
-            "fichas": [
-                {
-                    "id_ficha": 1,
-                    "color": "AMARILLO",
-                    "posicion": 0,
-                    "enBase": true,
-                    "enMeta": false
-                },
-                {
-                    "id_ficha": 2,
-                    "color": "AMARILLO",
-                    "posicion": 0,
-                    "enBase": true,
-                    "enMeta": false
-                },
-                {
-                    "id_ficha": 3,
-                    "color": "AMARILLO",
-                    "posicion": 0,
-                    "enBase": true,
-                    "enMeta": false
-                },
-                {
-                    "id_ficha": 4,
-                    "color": "AMARILLO",
                     "posicion": 0,
                     "enBase": true,
                     "enMeta": false
