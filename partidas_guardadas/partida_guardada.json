@@ -2,50 +2,50 @@
     "cantidadJugadores": 2,
     "estado": "EN_CURSO",
     "turnoActual": 0,
-    "dado": 0,
+    "dado": 3,
     "consecutivoSeis": 0,
-    "dado_lanzado": false,
-    "esperando_movimiento": false,
-    "mensaje_estado": "¡Comienza la partida! Turno de Santiago.",
+    "dado_lanzado": true,
+    "esperando_movimiento": true,
+    "mensaje_estado": "Fel sacó un 3. Selecciona una ficha para mover.",
     "ganador": null,
     "jugadores": [
         {
-            "nombre": "Santiago",
-            "color": "VERDE",
+            "nombre": "Fel",
+            "color": "ROJO",
             "es_bot": false,
             "fichas": [
                 {
                     "id_ficha": 1,
-                    "color": "VERDE",
+                    "color": "ROJO",
                     "posicion": 0,
                     "enBase": true,
                     "enMeta": false
                 },
                 {
                     "id_ficha": 2,
-                    "color": "VERDE",
-                    "posicion": 0,
-                    "enBase": true,
+                    "color": "ROJO",
+                    "posicion": 5,
+                    "enBase": false,
                     "enMeta": false
                 },
                 {
                     "id_ficha": 3,
-                    "color": "VERDE",
-                    "posicion": 0,
-                    "enBase": true,
+                    "color": "ROJO",
+                    "posicion": 10,
+                    "enBase": false,
                     "enMeta": false
                 },
                 {
                     "id_ficha": 4,
-                    "color": "VERDE",
-                    "posicion": 0,
-                    "enBase": true,
+                    "color": "ROJO",
+                    "posicion": 3,
+                    "enBase": false,
                     "enMeta": false
                 }
             ]
         },
         {
-            "nombre": "Bot 1",
+            "nombre": "Bot 2",
             "color": "AZUL",
             "es_bot": true,
             "fichas": [
