@@ -196,13 +196,13 @@ class PantallaContinuar:
 
         if 0 <= self.indice_seleccionado < len(self.partidas_actuales):
             id_sel = self.partidas_actuales[self.indice_seleccionado]["id_partida"]
-            partida, msg = self.persistencia.cargarPartida(id_sel)
+            partida = self.persistencia.cargarPartida(id_sel)
             if partida:
                 self.gestor.partidaActual = partida
                 self.gestor.estado = "JUEGO"
                 self.mensaje_error = ""
             else:
-                self.mensaje_error = msg
+                self.mensaje_error = "No se pudo cargar la partida seleccionada."
         else:
             self.mensaje_error = "Por favor selecciona una partida válida."
 

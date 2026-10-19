@@ -14,6 +14,19 @@ from interfaz.efectos import SistemaParticulas, dibujar_panel_glassmorphism, dib
 from interfaz.sonidos import GestorSonidos
 from interfaz.componentes import BotonModerno, BotonMute
 
+COLOR_RGB = {
+    Color.ROJO: (220, 50, 50),
+    Color.AZUL: (40, 120, 220),
+    Color.VERDE: (40, 180, 80),
+    Color.AMARILLO: (240, 190, 40)
+}
+
+
+def get_rgb(col):
+    if isinstance(col, Color):
+        return COLOR_RGB.get(col, (200, 200, 200))
+    return col
+
 
 class PantallaJuego:
 
@@ -144,7 +157,7 @@ class PantallaJuego:
             if self.timer_bot >= 35:
                 movimientos_validos = partida.obtenerMovimientosValidos()
                 if movimientos_validos:
-                    ficha_elegida = jugador_act.seleccionar_mejor_movimiento(movimientos_validos, partida.tablero)
+                    ficha_elegida = self._seleccionar_mejor_movimiento_bot(jugador_act, movimientos_validos, partida.tablero)
                     if ficha_elegida:
                         pos_ant = ficha_elegida.posicion
                         self.gestor.seleccionarFicha(ficha_elegida)
@@ -156,6 +169,32 @@ class PantallaJuego:
                             self.particulas.emitir_confeti(self.origen_x + self.ancho_tablero // 2, self.origen_y + self.alto_tablero // 2, 120)
                             self.sonidos.reproducir("victoria")
                 self.timer_bot = 0
+
+    def _seleccionar_mejor_movimiento_bot(self, jugador, movimientos_validos: list, tablero):
+        if not movimientos_validos:
+            return None
+        salida_colores = {Color.ROJO: 0, Color.AZUL: 13, Color.AMARILLO: 26, Color.VERDE: 39}
+        casillas_seguras = {0, 8, 13, 21, 26, 34, 39, 47}
+        partida = self.gestor.partidaActual
+        if partida:
+            for f in movimientos_validos:
+                if not f.enBase and not f.enMeta and f.posicion <= 51:
+                    casilla_proy = (salida_colores.get(f.color, 0) + (f.posicion + 1 - 1)) % 52
+                    if casilla_proy not in casillas_seguras:
+                        for jug_rival in partida.jugadores:
+                            if jug_rival.color != jugador.color:
+                                for f_rival in jug_rival.fichas:
+                                    if not f_rival.enBase and not f_rival.enMeta and f_rival.posicion <= 51:
+                                        c_rival = (salida_colores.get(f_rival.color, 0) + (f_rival.posicion - 1)) % 52
+                                        if c_rival == casilla_proy:
+                                            return f
+        for f in movimientos_validos:
+            if f.enBase:
+                return f
+        for f in movimientos_validos:
+            if f.posicion + 1 > 51:
+                return f
+        return sorted(movimientos_validos, key=lambda x: x.posicion, reverse=True)[0]
 
     def _generar_pasos_animacion(self, ficha, pos_inicio, pos_fin):
         if pos_inicio == pos_fin:
@@ -199,20 +238,20 @@ class PantallaJuego:
 
         # Caminitos a la meta
         for r, c in self.GRID_META_ROJO:
-            pygame.draw.rect(self.pantalla, Color.ROJO.obtener_rgb(), (ox + c * cs, oy + r * cs, cs, cs))
+            pygame.draw.rect(self.pantalla, get_rgb(Color.ROJO), (ox + c * cs, oy + r * cs, cs, cs))
         for r, c in self.GRID_META_VERDE:
-            pygame.draw.rect(self.pantalla, Color.VERDE.obtener_rgb(), (ox + c * cs, oy + r * cs, cs, cs))
+            pygame.draw.rect(self.pantalla, get_rgb(Color.VERDE), (ox + c * cs, oy + r * cs, cs, cs))
         for r, c in self.GRID_META_AZUL:
-            pygame.draw.rect(self.pantalla, Color.AZUL.obtener_rgb(), (ox + c * cs, oy + r * cs, cs, cs))
+            pygame.draw.rect(self.pantalla, get_rgb(Color.AZUL), (ox + c * cs, oy + r * cs, cs, cs))
         for r, c in self.GRID_META_AMARILLO:
-            pygame.draw.rect(self.pantalla, Color.AMARILLO.obtener_rgb(), (ox + c * cs, oy + r * cs, cs, cs))
+            pygame.draw.rect(self.pantalla, get_rgb(Color.AMARILLO), (ox + c * cs, oy + r * cs, cs, cs))
 
         # Casillas de salida
         colores_salida = [
             (6, 1, Color.ROJO), (1, 8, Color.VERDE), (13, 6, Color.AZUL), (8, 13, Color.AMARILLO)
         ]
         for r, c, col in colores_salida:
-            pygame.draw.rect(self.pantalla, col.obtener_rgb(), (ox + c * cs, oy + r * cs, cs, cs))
+            pygame.draw.rect(self.pantalla, get_rgb(col), (ox + c * cs, oy + r * cs, cs, cs))
 
         # Estrellas en casillas seguras
         casillas_estrella = [
@@ -220,7 +259,7 @@ class PantallaJuego:
             ((2, 6), (150, 150, 150)), ((6, 12), (150, 150, 150)), ((12, 8), (150, 150, 150)), ((8, 2), (150, 150, 150))
         ]
         for (r, c), col in casillas_estrella:
-            color_rgb = col.obtener_rgb() if isinstance(col, Color) else col
+            color_rgb = get_rgb(col)
             self._dibujar_estrella(ox + c * cs + cs // 2, oy + r * cs + cs // 2, cs * 0.34, color_rgb)
 
         # Rejilla del circuito con líneas negras delgadas
@@ -235,10 +274,10 @@ class PantallaJuego:
         pygame.draw.rect(self.pantalla, (255, 255, 255), rect_meta)
 
         center_pt = (cx + cz // 2, cy + cz // 2)
-        pygame.draw.polygon(self.pantalla, Color.ROJO.obtener_rgb(), [(cx, cy), (cx, cy + cz), center_pt])
-        pygame.draw.polygon(self.pantalla, Color.VERDE.obtener_rgb(), [(cx, cy), (cx + cz, cy), center_pt])
-        pygame.draw.polygon(self.pantalla, Color.AMARILLO.obtener_rgb(), [(cx + cz, cy), (cx + cz, cy + cz), center_pt])
-        pygame.draw.polygon(self.pantalla, Color.AZUL.obtener_rgb(), [(cx, cy + cz), (cx + cz, cy + cz), center_pt])
+        pygame.draw.polygon(self.pantalla, get_rgb(Color.ROJO), [(cx, cy), (cx, cy + cz), center_pt])
+        pygame.draw.polygon(self.pantalla, get_rgb(Color.VERDE), [(cx, cy), (cx + cz, cy), center_pt])
+        pygame.draw.polygon(self.pantalla, get_rgb(Color.AMARILLO), [(cx + cz, cy), (cx + cz, cy + cz), center_pt])
+        pygame.draw.polygon(self.pantalla, get_rgb(Color.AZUL), [(cx, cy + cz), (cx + cz, cy + cz), center_pt])
 
         # Borde dorado resplandeciente del tablero
         pygame.draw.rect(self.pantalla, (255, 215, 0), rect_tablero, width=4, border_radius=12)
@@ -247,7 +286,7 @@ class PantallaJuego:
         cs = self.tam_celda
         r_off, c_off = offset_grid
         rect = pygame.Rect(ox + c_off * cs, oy + r_off * cs, 6 * cs, 6 * cs)
-        pygame.draw.rect(self.pantalla, color.obtener_rgb(), rect)
+        pygame.draw.rect(self.pantalla, get_rgb(color), rect)
         pygame.draw.rect(self.pantalla, (20, 20, 20), rect, width=2)
 
         # Región interna blanca
@@ -261,7 +300,7 @@ class PantallaJuego:
             c_x = ox + (c_off + sc) * cs
             c_y = oy + (r_off + sr) * cs
             r_outer = cs * 0.65
-            pygame.draw.ellipse(self.pantalla, color.obtener_rgb(), (c_x - r_outer * 0.6, c_y - r_outer * 0.8, r_outer * 1.2, r_outer * 1.6))
+            pygame.draw.ellipse(self.pantalla, get_rgb(color), (c_x - r_outer * 0.6, c_y - r_outer * 0.8, r_outer * 1.2, r_outer * 1.6))
             pygame.draw.ellipse(self.pantalla, (20, 20, 20), (c_x - r_outer * 0.6, c_y - r_outer * 0.8, r_outer * 1.2, r_outer * 1.6), width=2)
 
     def _dibujar_estrella(self, cx, cy, radio, color):
@@ -335,20 +374,21 @@ class PantallaJuego:
 
     def _obtener_px_posicion(self, ficha, pos: int) -> tuple[float, float]:
         partida = self.gestor.partidaActual
-        tablero = partida.tablero
         ox, oy = self.origen_x, self.origen_y
         cs = self.tam_celda
 
         if pos == 0:
             spots = self.GRID_BASE[ficha.color]
-            spot = spots[(ficha.id_ficha - 1) % 4]
+            jugador = next((j for j in partida.jugadores if ficha in j.fichas), None) if partida else None
+            idx = jugador.fichas.index(ficha) if (jugador and ficha in jugador.fichas) else 0
+            spot = spots[idx % 4]
             r, c = spot
             return ox + c * cs, oy + r * cs
         elif pos == 58 or ficha.enMeta:
             return ox + 7.5 * cs, oy + 7.5 * cs
         elif pos <= 51:
-            f_temp = type('FichaTemp', (), {'enBase': False, 'enMeta': False, 'posicion': pos, 'color': ficha.color})()
-            c_global = tablero.obtener_casilla_global(f_temp)
+            salida_colores = {Color.ROJO: 0, Color.AZUL: 13, Color.AMARILLO: 26, Color.VERDE: 39}
+            c_global = (salida_colores.get(ficha.color, 0) + (pos - 1)) % 52
             r, c = self.GRID_CIRCUITO_52[c_global]
             return ox + (c + 0.5) * cs, oy + (r + 0.5) * cs
         else:
@@ -395,7 +435,7 @@ class PantallaJuego:
                         progreso = 1.0 - (dist / max(self.tam_celda, 1.0))
                         arc_y = -18 * math.sin(max(0.0, min(1.0, progreso)) * math.pi)
                         self.posiciones_fichas_anim[f] = [curr_x, curr_y, arc_y]
-                        self.particulas.emitir_estela_ficha(curr_x, curr_y + arc_y, f.color.obtener_rgb())
+                        self.particulas.emitir_estela_ficha(curr_x, curr_y + arc_y, get_rgb(f.color))
 
                 else:
                     if f not in self.posiciones_fichas_anim:
@@ -415,14 +455,14 @@ class PantallaJuego:
                 if es_valida and dist_m <= radio_ficha * 1.5:
                     self.ficha_hover_activa = f
 
-                if es_valida and not jug.es_bot:
+                if es_valida and not getattr(jug, "es_bot", False):
                     radio_glow = radio_ficha + 4 + 4 * math.sin(self.ticks_glow * 0.2)
                     pygame.draw.circle(self.pantalla, (255, 240, 80), (int(px), int(render_y)), int(radio_glow))
                     pygame.draw.circle(self.pantalla, (255, 255, 255), (int(px), int(render_y)), int(radio_glow - 2), width=2)
 
                 # Ficha 3D estilizada
                 pygame.draw.circle(self.pantalla, (20, 20, 20), (int(px) + 2, int(render_y) + 3), radio_ficha)
-                pygame.draw.circle(self.pantalla, f.color.obtener_rgb(), (int(px), int(render_y)), radio_ficha)
+                pygame.draw.circle(self.pantalla, get_rgb(f.color), (int(px), int(render_y)), radio_ficha)
                 pygame.draw.circle(self.pantalla, (255, 255, 255, 120), (int(px - 3), int(render_y - 4)), max(2, radio_ficha // 3))
                 pygame.draw.circle(self.pantalla, (20, 20, 20), (int(px), int(render_y)), radio_ficha, width=2)
 
@@ -474,7 +514,7 @@ class PantallaJuego:
             self.dado_visual_temp = random.randint(1, 6)
             if self.frames_anim_dado <= 0:
                 self.animando_dado = False
-                partida.tirarDado()
+                self.gestor.lanzarDado()
                 if partida.dado == 6:
                     self.particulas.emitir_estrellas(self.btn_lanzar.centerx, self.btn_lanzar.centery, 20)
                     self.sonidos.reproducir("dado_seis")
@@ -524,7 +564,7 @@ class PantallaJuego:
             return
 
         jugador_act = partida.obtenerJugadorActual()
-        es_humano = jugador_act and not jugador_act.es_bot
+        es_humano = jugador_act and not getattr(jugador_act, "es_bot", False)
 
         if evento.type == pygame.MOUSEBUTTONDOWN and evento.button == 1:
             pos = evento.pos
@@ -533,10 +573,10 @@ class PantallaJuego:
                 self.gestor.consultarReglas()
 
             elif hasattr(self, 'btn_pausa_inst') and self.btn_pausa_inst.es_cliqueado(evento):
-                self.gestor.pausar()
+                self.gestor.pausarPartida()
 
             elif hasattr(self, 'btn_salir_x') and self.btn_salir_x.es_cliqueado(evento):
-                self.gestor.pausar()
+                self.gestor.pausarPartida()
                 if hasattr(self.interfaz_padre, 'pantalla_pausa'):
                     self.interfaz_padre.pantalla_pausa.confirmando_accion = "SALIR"
 

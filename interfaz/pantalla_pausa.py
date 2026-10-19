@@ -162,17 +162,17 @@ class PantallaPausa:
             if hasattr(self, 'btn_conf_si_inst') and self.btn_conf_si_inst.es_cliqueado(evento):
                 if self.confirmando_accion == "REINICIAR":
                     self.confirmando_accion = None
-                    self.gestor.reiniciarPartida()
+                    self.gestor.confirmarReinicio()
                 elif self.confirmando_accion == "SALIR":
                     self.confirmando_accion = None
-                    self.gestor.cancelarPartida()
+                    self.gestor.confirmarSalida()
 
             elif hasattr(self, 'btn_conf_no_inst') and self.btn_conf_no_inst.es_cliqueado(evento):
                 self.confirmando_accion = None
             return
 
         if hasattr(self, 'btn_continuar_inst') and self.btn_continuar_inst.es_cliqueado(evento):
-            self.gestor.reanudar()
+            self.gestor.reanudarPartida()
 
         elif hasattr(self, 'btn_reiniciar_inst') and self.btn_reiniciar_inst.es_cliqueado(evento):
             self.confirmando_accion = "REINICIAR"
@@ -181,12 +181,12 @@ class PantallaPausa:
             self.gestor.consultarReglas()
 
         elif hasattr(self, 'btn_stats_inst') and self.btn_stats_inst.es_cliqueado(evento):
-            self.gestor.consultarEstadisticas()
+            self.gestor.verEstadisticas()
 
         elif hasattr(self, 'btn_menu_inst') and self.btn_menu_inst.es_cliqueado(evento):
             self.confirmando_accion = "SALIR"
 
         elif hasattr(self, 'btn_guardar_inst') and self.btn_guardar_inst.es_cliqueado(evento):
             if self.gestor.partidaActual:
-                exito, msg = self.persistencia.guardarPartida(self.gestor.partidaActual)
-                self.mensaje_toast = "¡Partida guardada con éxito!" if exito else msg
+                self.gestor.guardarPartida()
+                self.mensaje_toast = "¡Partida guardada con éxito!"

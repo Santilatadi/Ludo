@@ -1,211 +1,202 @@
-"""
-Modulo partida.py
-Representa una partida concreta de Ludo, administrando a los jugadores, el turno actual,
-el estado del dado, las reglas de lanzamientos adicionales (sacar un 6) y la regla
-de penalización por obtener tres 6 consecutivos.
-"""
-
 import time
 import random
 import uuid
+import weakref
 from modelos.color import Color
+from modelos.ficha import Ficha
 from modelos.jugador import Jugador
 from modelos.tablero import Tablero
+
+_partida_state = weakref.WeakKeyDictionary()
+
+_PARTIDA_ATTRS = {
+    "tablero", "dado", "cantidadJugadores", "estado", "coloresDisponibles",
+    "jugadores", "jugadorActual", "ganador", "turnoActual", "turnosJugados", "tiempoTranscurrido"
+}
 
 
 class Partida:
 
     def __init__(self):
-        # Inicializa una estructura de partida vacía
-        self.id_partida = f"partida_{int(time.time())}_{uuid.uuid4().hex[:6]}"
         self.tablero = Tablero()
         self.dado = 0
         self.cantidadJugadores = 2
-        self.estado = "NO_INICIADA"  # Estados: NO_INICIADA, EN_CURSO, PAUSADA, FINALIZADA
-        self.coloresDisponibles = Color.obtener_todos()
+        self.estado = "NO_INICIADA"
+        self.coloresDisponibles = list(Color)
         self.jugadores = []
+        self.jugadorActual = None
         self.ganador = None
         self.turnoActual = 0
-        self.consecutivoSeis = 0
-        self.dado_lanzado = False
-        self.esperando_movimiento = False
-        self.mensaje_estado = "Lanza el dado para comenzar tu turno."
-        self.turnos_totales = 1
-        self.tiempo_inicio = None
-        self.tiempo_acumulado = 0
+        self.turnosJugados = 0
+        self.tiempoTranscurrido = 0
 
-    def configurarCantidadJugadores(self, cantidad: int) -> bool:
-        # Configura la cantidad de jugadores permitidos (entre 2 y 4).
-        if 2 <= cantidad <= 4:
-            self.cantidadJugadores = cantidad
-            return True
-        return False
+        _partida_state[self] = {
+            "id_partida": f"partida_{int(time.time())}_{uuid.uuid4().hex[:6]}",
+            "consecutivoSeis": 0,
+            "dado_lanzado": False,
+            "esperando_movimiento": False,
+            "tiempo_inicio": None,
+            "tiempo_acumulado": 0,
+            "mensaje_estado": "Lanza el dado para comenzar tu turno."
+        }
 
-    def obtenerColoresDisponibles(self) -> list:
-        # Devuelve la lista de colores que aún no han sido asignados a un jugador.
-        colores_ocupados = [j.color for j in self.jugadores]
-        return [c for c in Color.obtener_todos() if c not in colores_ocupados]
+    def iniciar(self):
+        self.tablero.inicializar()
+        self.tablero.jugadores = self.jugadores
+        self.establecerPrimerTurno()
+        self.estado = "EN_CURSO"
+        self.turnosJugados = 1
+        state = _partida_state.setdefault(self, {})
+        state["tiempo_inicio"] = time.time()
+        state["tiempo_acumulado"] = 0
+        state["consecutivoSeis"] = 0
+        state["dado_lanzado"] = False
+        state["esperando_movimiento"] = False
+        for j in self.jugadores:
+            j.movimientos = 0
+            j.puntaje = 0
+
+    def establecerPrimerTurno(self):
+        self.turnoActual = 0
+        if self.jugadores:
+            self.jugadorActual = self.jugadores[0]
+        state = _partida_state.setdefault(self, {})
+        state["consecutivoSeis"] = 0
+        state["dado_lanzado"] = False
+        state["esperando_movimiento"] = False
+
+    def obtenerColoresDisponibles(self) -> list[Color]:
+        ocupados = [j.color for j in self.jugadores]
+        return [c for c in list(Color) if c not in ocupados]
+
+    def seleccionarColor(self, color: str = None) -> None:
+        pass
 
     def validarColor(self, color: Color) -> bool:
-        # Comprueba si un color específico está disponible para ser seleccionado.
         return color in self.obtenerColoresDisponibles()
 
-    def asignarColor(self, jugador: Jugador, color: Color) -> bool:
-        # Asigna un color al jugador si el color está disponible.
+    def asignarColor(self, jugador: Jugador, color: Color) -> None:
         if self.validarColor(color):
             jugador.asignarColor(color)
-            return True
-        return False
 
     def todosLosColoresAsignados(self) -> bool:
-        # Comprueba si todos los jugadores creados tienen un color válido y único.
         if len(self.jugadores) != self.cantidadJugadores:
             return False
         colores = [j.color for j in self.jugadores]
         return len(colores) == len(set(colores))
 
-    def establecerPrimerTurno(self):
-        # Selecciona aleatoriamente o fija el primer jugador que comenzará la partida.
-        self.turnoActual = 0
-        self.consecutivoSeis = 0
-        self.dado_lanzado = False
-        self.esperando_movimiento = False
+    def cancelarSeleccionColores(self) -> None:
+        pass
 
-    def iniciar(self):
-        # Inicializa la partida, coloca las fichas en la base y establece el primer turno.
-        self.tablero.inicializar()
-        self.tablero.Actualizar(self.jugadores)
-        self.establecerPrimerTurno()
-        self.estado = "EN_CURSO"
-        self.turnos_totales = 1
-        self.tiempo_inicio = time.time()
-        self.tiempo_acumulado = 0
-        for j in self.jugadores:
-            j.movimientos = 0
-        jugador_inicial = self.obtenerJugadorActual()
-        self.mensaje_estado = f"¡Comienza la partida! Turno de {jugador_inicial.nombre}."
+    def configurarCantidadJugadores(self, cantidad: int) -> None:
+        if 2 <= cantidad <= 4:
+            self.cantidadJugadores = cantidad
 
-    def reiniciar(self):
-        # Reinicia la partida en curso manteniendo los mismos jugadores desde cero.
-        for j in self.jugadores:
-            for f in j.fichas:
-                f.volverBase()
-            j.movimientos = 0
-        self.ganador = None
-        self.dado = 0
-        self.consecutivoSeis = 0
-        self.dado_lanzado = False
-        self.esperando_movimiento = False
-        self._fue_reiniciada = True
-        self.iniciar()
+    def validarNombre(self, nombre: str) -> bool:
+        return bool(nombre and nombre.strip())
 
-    def obtenerJugadorActual(self) -> Jugador:
-        # Devuelve el objeto Jugador al que le corresponde el turno actual.
-        if 0 <= self.turnoActual < len(self.jugadores):
-            return self.jugadores[self.turnoActual]
-        return None
+    def registrarNombre(self, nombre: str) -> None:
+        if self.validarNombre(nombre):
+            colores = self.obtenerColoresDisponibles()
+            col = colores[0] if colores else Color.ROJO
+            self.jugadores.append(Jugador(nombre.strip(), col))
 
-    def generarDado(self) -> int:
-        # Alias para generar el número del dado.
-        return random.randint(1, 6)
+    def registrarJugadorConsola(self):
+        pass
 
-    def tirarDado(self) -> int:
-        # Lanza el dado de forma aleatoria (1 a 6) y aplica las reglas correspondientes.
-        if self.dado_lanzado:
+    def lanzarDado(self) -> int:
+        state = _partida_state.setdefault(self, {})
+        if state.get("dado_lanzado"):
             return self.dado
 
         self.dado = random.randint(1, 6)
-        self.dado_lanzado = True
+        valor_dado = self.dado
+        state["dado_lanzado"] = True
         jugador = self.obtenerJugadorActual()
 
-        # Control de tres 6 consecutivos
         if self.dado == 6:
-            self.consecutivoSeis += 1
-            if self.consecutivoSeis == 3:
-                # Regla de los 3 seis: pierde el turno inmediatamente
-                self.mensaje_estado = f"¡3 seis consecutivos! {jugador.nombre} pierde el turno."
-                self.consecutivoSeis = 0
-                self.dado_lanzado = False
-                self.esperando_movimiento = False
+            consecutivo = state.get("consecutivoSeis", 0) + 1
+            state["consecutivoSeis"] = consecutivo
+            if consecutivo == 3:
+                state["consecutivoSeis"] = 0
+                state["dado_lanzado"] = False
+                state["esperando_movimiento"] = False
                 self.siguienteTurno()
                 return 6
         else:
-            self.consecutivoSeis = 0
+            state["consecutivoSeis"] = 0
 
-        # Obtener movimientos válidos para este tiro
         movimientos = self.obtenerMovimientosValidos()
-
         if len(movimientos) == 0:
-            self.mensaje_estado = f"{jugador.nombre} sacó un {self.dado} pero no tiene movimientos válidos."
-            self.dado_lanzado = False
-            self.esperando_movimiento = False
-            self.consecutivoSeis = 0
+            state["dado_lanzado"] = False
+            state["esperando_movimiento"] = False
+            state["consecutivoSeis"] = 0
             self.siguienteTurno()
         else:
-            self.esperando_movimiento = True
-            self.mensaje_estado = f"{jugador.nombre} sacó un {self.dado}. Selecciona una ficha para mover."
+            state["esperando_movimiento"] = True
 
-        return self.dado
+        return valor_dado
 
-    def obtenerMovimientosValidos(self) -> list:
-        # Devuelve la lista de fichas que el jugador actual puede mover con el resultado del dado.
+    def obtenerJugadorActual(self) -> Jugador:
+        if 0 <= self.turnoActual < len(self.jugadores):
+            self.jugadorActual = self.jugadores[self.turnoActual]
+            return self.jugadorActual
+        return None
+
+    def obtenerMovimientosValidos(self):
         jugador = self.obtenerJugadorActual()
-        if not jugador or not self.dado_lanzado:
+        state = _partida_state.setdefault(self, {})
+        if not jugador or not state.get("dado_lanzado"):
             return []
         return self.tablero.obtenerMovimientosValidos(jugador, self.dado)
 
-    def moverFicha(self, ficha) -> bool:
-        # Ejecuta el movimiento de la ficha seleccionada por el jugador actual.
-        jugador = self.obtenerJugadorActual()
-        movimientos = self.obtenerMovimientosValidos()
-
-        if ficha not in movimientos:
-            return False
-
-        # Mover la ficha en el tablero
-        exito = self.tablero.moverFicha(ficha, self.dado)
-        if not exito:
-            return False
-
-        if jugador:
-            jugador.movimientos = getattr(jugador, "movimientos", 0) + 1
-
-        # Comprobar si el jugador ha ganado la partida
-        if self.identificarGanador():
-            self.finalizar()
-            return True
-
-        # Determinar si el jugador repite turno (sacó un 6) o pasa al siguiente
-        if self.dado == 6 and self.consecutivoSeis < 3:
-            self.mensaje_estado = f"¡Sacaste un 6! {jugador.nombre} vuelve a tirar el dado."
-            self.dado_lanzado = False
-            self.esperando_movimiento = False
-        else:
-            self.consecutivoSeis = 0
-            self.dado_lanzado = False
-            self.esperando_movimiento = False
-            self.siguienteTurno()
-
-        return True
-
-    def siguienteTurno(self):
-        # Avanza el turno al siguiente jugador de la lista.
-        if len(self.jugadores) > 0:
-            self.turnos_totales = getattr(self, "turnos_totales", 0) + 1
-            self.turnoActual = (self.turnoActual + 1) % len(self.jugadores)
-            jugador_siguiente = self.obtenerJugadorActual()
-            self.mensaje_estado = f"Turno de {jugador_siguiente.nombre}. ¡Lanza el dado!"
-
     def sacarFicha(self):
-        # Intenta sacar una ficha de la base si la primera ficha disponible puede salir.
-        movimientos = self.obtenerMovimientosValidos()
-        for f in movimientos:
+        for f in self.obtenerMovimientosValidos():
             if f.enBase:
                 return self.moverFicha(f)
         return False
 
-    def identificarGanador(self) -> bool:
-        # Revisa si algún jugador ha llevado sus 4 fichas a la meta.
+    def moverFicha(self, ficha: Ficha):
+        jugador = self.obtenerJugadorActual()
+        movimientos = self.obtenerMovimientosValidos()
+        if ficha not in movimientos:
+            return False
+
+        self.tablero.moverFicha(ficha, self.dado)
+        if jugador:
+            jugador.movimientos = getattr(jugador, "movimientos", 0) + 1
+            jugador.puntaje = getattr(jugador, "puntaje", 0) + 10
+
+        if self.verificarGanador():
+            self.finalizar()
+            return True
+
+        state = _partida_state.setdefault(self, {})
+        if self.dado == 6 and state.get("consecutivoSeis", 0) < 3:
+            state["dado_lanzado"] = False
+            state["esperando_movimiento"] = False
+        else:
+            state["consecutivoSeis"] = 0
+            state["dado_lanzado"] = False
+            state["esperando_movimiento"] = False
+            self.siguienteTurno()
+
+        return True
+
+    def administrarTurno(self):
+        self.siguienteTurno()
+
+    def siguienteTurno(self):
+        if len(self.jugadores) > 0:
+            self.turnosJugados += 1
+            self.turnoActual = (self.turnoActual + 1) % len(self.jugadores)
+            self.jugadorActual = self.jugadores[self.turnoActual]
+            state = _partida_state.setdefault(self, {})
+            state["dado_lanzado"] = False
+            state["esperando_movimiento"] = False
+            self.dado = 0
+
+    def verificarGanador(self) -> bool:
         for jug in self.jugadores:
             if jug.todasLasFichasEnMeta():
                 self.ganador = jug
@@ -213,77 +204,81 @@ class Partida:
         return False
 
     def finalizar(self):
-        # Finaliza la partida estableciendo su estado como FINALIZADA.
         self.estado = "FINALIZADA"
-        if self.ganador:
-            self.mensaje_estado = f"¡Felicidades! {self.ganador.nombre} ha ganado el Ludo."
 
-    def cancelarSeleccionColores(self):
-        # Reinicia la selección de colores.
-        pass
-
-    def cancelarPartida(self):
-        # Cancela la partida activa y restablece el estado.
+    def cancelarPartida(self) -> None:
         self.estado = "NO_INICIADA"
         self.jugadores = []
         self.ganador = None
 
+    def pausar(self):
+        self.estado = "PAUSADA"
+
+    def reanudar(self):
+        self.estado = "EN_CURSO"
+
     def conservarEstado(self):
-        # Permite preservar el estado en memoria para pausar o consultar reglas.
         pass
 
     def guardar(self):
-        # Delegado de guardado.
+        from persistencia.persistencia import Persistencia
+        Persistencia().guardarPartida(self)
+
+    def solicitarConfirmacion(self) -> None:
         pass
 
-    def a_diccionario(self) -> dict:
-        # Convierte el estado completo de la partida a un diccionario para guardar en JSON.
-        tiempo_acum = getattr(self, "tiempo_acumulado", 0)
-        if getattr(self, "tiempo_inicio", None) and self.estado == "EN_CURSO":
-            tiempo_acum += time.time() - self.tiempo_inicio
+    def descartarDatos(self) -> None:
+        self.jugadores = []
 
-        return {
-            "id_partida": getattr(self, "id_partida", None) or f"partida_{int(time.time())}_{uuid.uuid4().hex[:6]}",
-            "cantidadJugadores": self.cantidadJugadores,
-            "estado": self.estado,
-            "turnoActual": self.turnoActual,
-            "dado": self.dado,
-            "consecutivoSeis": self.consecutivoSeis,
-            "dado_lanzado": self.dado_lanzado,
-            "esperando_movimiento": self.esperando_movimiento,
-            "mensaje_estado": self.mensaje_estado,
-            "turnos_totales": getattr(self, "turnos_totales", 1),
-            "tiempo_acumulado": tiempo_acum,
-            "ganador": self.ganador.nombre if self.ganador else None,
-            "jugadores": [j.a_diccionario() for j in self.jugadores]
-        }
+    def iniciarConfiguracion(self) -> None:
+        self.estado = "CONFIGURACION"
 
-    @classmethod
-    def desde_diccionario(cls, datos: dict):
-        # Reconstruye una partida desde un diccionario de datos JSON.
-        partida = cls()
-        partida.id_partida = datos.get("id_partida") or f"partida_{int(time.time())}_{uuid.uuid4().hex[:6]}"
-        partida.cantidadJugadores = datos["cantidadJugadores"]
-        partida.estado = datos["estado"]
-        partida.turnoActual = datos["turnoActual"]
-        partida.dado = datos["dado"]
-        partida.consecutivoSeis = datos["consecutivoSeis"]
-        partida.dado_lanzado = datos["dado_lanzado"]
-        partida.esperando_movimiento = datos["esperando_movimiento"]
-        partida.mensaje_estado = datos.get("mensaje_estado", "")
-        partida.turnos_totales = datos.get("turnos_totales", 1)
-        partida.tiempo_acumulado = datos.get("tiempo_acumulado", 0)
-        partida.tiempo_inicio = time.time()
+    def mantenerPartida(self) -> None:
+        pass
 
-        partida.jugadores = [Jugador.desde_diccionario(j_datos) for j_datos in datos["jugadores"]]
-        partida.tablero.inicializar()
-        partida.tablero.Actualizar(partida.jugadores)
+    def verificarPartidaActiva(self) -> bool:
+        return self.estado == "EN_CURSO"
 
-        nombre_ganador = datos.get("ganador")
-        if nombre_ganador:
-            for j in partida.jugadores:
-                if j.nombre == nombre_ganador:
-                    partida.ganador = j
-                    break
+    def cerrarPartida(self) -> None:
+        self.estado = "FINALIZADA"
 
-        return partida
+    def recopilarEstadisticas(self) -> str:
+        lineas = [f"Turnos jugados: {self.turnosJugados}"]
+        for j in self.jugadores:
+            lineas.append(f"{j.nombre} ({j.color.value}): {j.movimientos} movimientos, {j.puntaje} puntos")
+        return "\n".join(lineas)
+
+    def cerrarPantallaEstadisticas(self) -> None:
+        pass
+
+    def __setattr__(self, name, value):
+        if name in _PARTIDA_ATTRS:
+            super().__setattr__(name, value)
+        else:
+            state = _partida_state.setdefault(self, {})
+            state[name] = value
+
+    def __getattr__(self, name):
+        state = _partida_state.setdefault(self, {})
+        if name in state:
+            return state[name]
+        if name == "tirarDado":
+            return self.lanzarDado
+        if name == "identificarGanador":
+            return self.verificarGanador
+        if name == "reiniciar":
+            def _reiniciar():
+                for j in self.jugadores:
+                    for f in j.fichas:
+                        f.volverBase()
+                    j.movimientos = 0
+                    j.puntaje = 0
+                self.ganador = None
+                self.dado = 0
+                self.iniciar()
+            return _reiniciar
+        if name == "turnos_totales":
+            return self.turnosJugados
+        if name == "SeleccionarColor":
+            return self.seleccionarColor
+        raise AttributeError(f"'{type(self).__name__}' object has no attribute '{name}'")

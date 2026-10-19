@@ -274,10 +274,12 @@ class PantallaConfiguracion:
         partida.jugadores = []
 
         for i in range(self.cant_jugadores):
+            nom = self.nombres[i].strip()
+            if self.es_bot_lista[i] and "Bot" not in nom:
+                nom = f"Bot {nom}"
             jugador = Jugador(
-                nombre=self.nombres[i].strip(),
-                color=self.colores[i],
-                es_bot=self.es_bot_lista[i]
+                nombre=nom,
+                color=self.colores[i]
             )
             partida.jugadores.append(jugador)
 

@@ -111,4 +111,4 @@ class PantallaEstadisticas:
     def manejar_evento(self, evento):
 
         if hasattr(self, 'btn_volver_inst') and self.btn_volver_inst.es_cliqueado(evento):
-            self.gestor.volverDeEstadisticas()
+            self.gestor.volver()
