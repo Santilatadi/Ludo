@@ -5,7 +5,9 @@ el estado del dado, las reglas de lanzamientos adicionales (sacar un 6) y la reg
 de penalización por obtener tres 6 consecutivos.
 """
 
+import time
 import random
+import uuid
 from modelos.color import Color
 from modelos.jugador import Jugador
 from modelos.tablero import Tablero
@@ -15,6 +17,7 @@ class Partida:
 
     def __init__(self):
         # Inicializa una estructura de partida vacía
+        self.id_partida = f"partida_{int(time.time())}_{uuid.uuid4().hex[:6]}"
         self.tablero = Tablero()
         self.dado = 0
         self.cantidadJugadores = 2
@@ -27,6 +30,9 @@ class Partida:
         self.dado_lanzado = False
         self.esperando_movimiento = False
         self.mensaje_estado = "Lanza el dado para comenzar tu turno."
+        self.turnos_totales = 1
+        self.tiempo_inicio = None
+        self.tiempo_acumulado = 0
 
     def configurarCantidadJugadores(self, cantidad: int) -> bool:
         # Configura la cantidad de jugadores permitidos (entre 2 y 4).
@@ -71,8 +77,27 @@ class Partida:
         self.tablero.Actualizar(self.jugadores)
         self.establecerPrimerTurno()
         self.estado = "EN_CURSO"
+        self.turnos_totales = 1
+        self.tiempo_inicio = time.time()
+        self.tiempo_acumulado = 0
+        for j in self.jugadores:
+            j.movimientos = 0
         jugador_inicial = self.obtenerJugadorActual()
         self.mensaje_estado = f"¡Comienza la partida! Turno de {jugador_inicial.nombre}."
+
+    def reiniciar(self):
+        # Reinicia la partida en curso manteniendo los mismos jugadores desde cero.
+        for j in self.jugadores:
+            for f in j.fichas:
+                f.volverBase()
+            j.movimientos = 0
+        self.ganador = None
+        self.dado = 0
+        self.consecutivoSeis = 0
+        self.dado_lanzado = False
+        self.esperando_movimiento = False
+        self._fue_reiniciada = True
+        self.iniciar()
 
     def obtenerJugadorActual(self) -> Jugador:
         # Devuelve el objeto Jugador al que le corresponde el turno actual.
@@ -142,6 +167,9 @@ class Partida:
         if not exito:
             return False
 
+        if jugador:
+            jugador.movimientos = getattr(jugador, "movimientos", 0) + 1
+
         # Comprobar si el jugador ha ganado la partida
         if self.identificarGanador():
             self.finalizar()
@@ -163,6 +191,7 @@ class Partida:
     def siguienteTurno(self):
         # Avanza el turno al siguiente jugador de la lista.
         if len(self.jugadores) > 0:
+            self.turnos_totales = getattr(self, "turnos_totales", 0) + 1
             self.turnoActual = (self.turnoActual + 1) % len(self.jugadores)
             jugador_siguiente = self.obtenerJugadorActual()
             self.mensaje_estado = f"Turno de {jugador_siguiente.nombre}. ¡Lanza el dado!"
@@ -209,7 +238,12 @@ class Partida:
 
     def a_diccionario(self) -> dict:
         # Convierte el estado completo de la partida a un diccionario para guardar en JSON.
+        tiempo_acum = getattr(self, "tiempo_acumulado", 0)
+        if getattr(self, "tiempo_inicio", None) and self.estado == "EN_CURSO":
+            tiempo_acum += time.time() - self.tiempo_inicio
+
         return {
+            "id_partida": getattr(self, "id_partida", None) or f"partida_{int(time.time())}_{uuid.uuid4().hex[:6]}",
             "cantidadJugadores": self.cantidadJugadores,
             "estado": self.estado,
             "turnoActual": self.turnoActual,
@@ -218,6 +252,8 @@ class Partida:
             "dado_lanzado": self.dado_lanzado,
             "esperando_movimiento": self.esperando_movimiento,
             "mensaje_estado": self.mensaje_estado,
+            "turnos_totales": getattr(self, "turnos_totales", 1),
+            "tiempo_acumulado": tiempo_acum,
             "ganador": self.ganador.nombre if self.ganador else None,
             "jugadores": [j.a_diccionario() for j in self.jugadores]
         }
@@ -226,6 +262,7 @@ class Partida:
     def desde_diccionario(cls, datos: dict):
         # Reconstruye una partida desde un diccionario de datos JSON.
         partida = cls()
+        partida.id_partida = datos.get("id_partida") or f"partida_{int(time.time())}_{uuid.uuid4().hex[:6]}"
         partida.cantidadJugadores = datos["cantidadJugadores"]
         partida.estado = datos["estado"]
         partida.turnoActual = datos["turnoActual"]
@@ -234,6 +271,9 @@ class Partida:
         partida.dado_lanzado = datos["dado_lanzado"]
         partida.esperando_movimiento = datos["esperando_movimiento"]
         partida.mensaje_estado = datos.get("mensaje_estado", "")
+        partida.turnos_totales = datos.get("turnos_totales", 1)
+        partida.tiempo_acumulado = datos.get("tiempo_acumulado", 0)
+        partida.tiempo_inicio = time.time()
 
         partida.jugadores = [Jugador.desde_diccionario(j_datos) for j_datos in datos["jugadores"]]
         partida.tablero.inicializar()

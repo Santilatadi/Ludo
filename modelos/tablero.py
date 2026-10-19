@@ -4,6 +4,7 @@ Representa el tablero de Ludo, administrando las posiciones de las fichas,
 la lógica de casillas seguras, barreras, capturas y el cálculo de coordenadas.
 """
 
+from decimal import __libmpdec_version__
 from modelos.color import Color
 from modelos.ficha import Ficha
 
@@ -13,6 +14,8 @@ class Tablero:
     TOTAL_CASILLAS_CIRCUITO = 52
 
     # Casillas de salida en el circuito principal para cada color
+    #Este diccionario relaciona cada color con su casilla de salida.
+    #HACEMOS UN DICCIONARIO PARA SABER EN QUE CASILLA ESTA CADA COLOR
     SALIDA_COLOR = {
         Color.ROJO: 0,
         Color.AZUL: 13,
@@ -80,7 +83,9 @@ class Tablero:
         salida = self.SALIDA_COLOR[ficha_movida.color]
         casilla_intermedia = (salida + (pos_relativa - 1)) % self.TOTAL_CASILLAS_CIRCUITO
 
-        # Contar fichas enemigas en esa casilla global
+        # "DICCIONARIO" Contar fichas enemigas en esa casilla global,
+        # la clave es el color del jugador y el valor es la cantidad de fichas
+        # Sirve para contar las fichas enemigas de cada color que coinciden en una casilla y comprobar si forman una barrera.
         fichas_enemigas_por_color = {}
         for jug in self.jugadores:
             if jug.color != ficha_movida.color:
@@ -153,8 +158,12 @@ class Tablero:
 
     def obtenerMovimientosValidos(self, jugador, dado: int) -> list:
         # Devuelve la lista de fichas del jugador que pueden realizar un movimiento válido.
+        # Recorremos todas las fichas del jugador y comprobamos si pueden moverse.
         movimientos = []
         for ficha in jugador.obtenerFichas():
             if self.puedeMover(ficha, dado):
                 movimientos.append(ficha)
+                #tenés cuatro fichas, pero solamente podés mover dos.
+                #el programa sabe cuáles son las fichas que puede mover el jugador.
         return movimientos
+

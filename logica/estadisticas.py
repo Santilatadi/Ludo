@@ -27,9 +27,13 @@ class Estadisticas:
         # Incrementa el conteo global de capturas.
         self.capturas_totales += 1
 
-    def obtener_tiempo_formateado(self) -> str:
+    def obtener_tiempo_formateado(self, partida=None) -> str:
         # Devuelve el tiempo transcurrido en minutos y segundos (ej. 05:42).
-        segundos = int(time.time() - self.tiempo_inicio)
+        if partida and getattr(partida, "tiempo_inicio", None):
+            segundos = int(time.time() - partida.tiempo_inicio + getattr(partida, "tiempo_acumulado", 0))
+        else:
+            segundos = int(time.time() - self.tiempo_inicio)
+        segundos = max(0, segundos)
         minutos = segundos // 60
         seg_restantes = segundos % 60
         return f"{minutos:02d}:{seg_restantes:02d}"
@@ -49,16 +53,24 @@ class Estadisticas:
         # Genera un diccionario con el resumen completo de estadísticas de la partida.
         resumen_jugadores = []
         for j in partida.jugadores:
+            movs = getattr(j, "movimientos", 0)
+            if movs == 0 and j.nombre in self.movimientos_por_jugador:
+                movs = self.movimientos_por_jugador[j.nombre]
+
             resumen_jugadores.append({
                 "nombre": j.nombre,
                 "color": j.color.name,
-                "movimientos": self.movimientos_por_jugador.get(j.nombre, 0),
+                "movimientos": movs,
                 "puntaje": self.calcular_puntaje(j)
             })
 
+        turnos = getattr(partida, "turnos_totales", 0)
+        if turnos == 0 and self.turnos_totales > 0:
+            turnos = self.turnos_totales
+
         return {
-            "tiempo": self.obtener_tiempo_formateado(),
-            "turnos_totales": self.turnos_totales,
+            "tiempo": self.obtener_tiempo_formateado(partida),
+            "turnos_totales": turnos,
             "jugadores": resumen_jugadores,
             "ganador": partida.ganador.nombre if partida.ganador else "Ninguno"
         }

@@ -1,19 +1,21 @@
 """
 Modulo configuracion.py
 Dibuja e interactúa con la Pantalla de Configuración de Nueva Partida.
-Adaptado 100% al diseño exacto de Figma.
+Adaptado con tarjetas visuales glassmorphism, avatar de bots/jugadores y botones sonoros interactivos.
 """
 
 import os
 import sys
+import pygame
 
 directorio_raiz = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if directorio_raiz not in sys.path:
     sys.path.insert(0, directorio_raiz)
 
-import pygame
 from modelos.color import Color
 from modelos.jugador import Jugador
+from interfaz.efectos import SistemaParticulas, dibujar_panel_glassmorphism, dibujar_texto_glow
+from interfaz.componentes import BotonModerno, BotonMute
 
 
 class PantallaConfiguracion:
@@ -27,7 +29,7 @@ class PantallaConfiguracion:
             self.fuente_titulo = pygame.font.Font(ruta_fuente, 42)
             self.fuente_sub = pygame.font.Font(ruta_fuente, 20)
             self.fuente_label = pygame.font.Font(ruta_fuente, 18)
-            self.fuente_boton = pygame.font.Font(ruta_fuente, 26)
+            self.fuente_boton = pygame.font.Font(ruta_fuente, 24)
             self.fuente_pill = pygame.font.Font(ruta_fuente, 16)
         else:
             self.fuente_titulo = pygame.font.SysFont("Impact", 40, bold=True)
@@ -43,164 +45,162 @@ class PantallaConfiguracion:
         self.campo_activo = None
         self.mensaje_error = ""
 
-    def _render_texto_delineado(self, texto, fuente, color_texto, color_borde=(0, 0, 0), grosor=1):
-        if grosor <= 0 or color_borde is None or color_texto == color_borde:
-            return fuente.render(texto, True, color_texto)
-
-        surf_base = fuente.render(texto, True, color_texto)
-        w, h = surf_base.get_size()
-        surf_final = pygame.Surface((w + grosor * 2, h + grosor * 2), pygame.SRCALPHA)
-
-        offsets = [
-            (-grosor, 0), (grosor, 0), (0, -grosor), (0, grosor),
-            (-grosor, -grosor), (-grosor, grosor), (grosor, -grosor), (grosor, grosor)
-        ]
-        surf_borde = fuente.render(texto, True, color_borde)
-        for dx, dy in offsets:
-            surf_final.blit(surf_borde, (dx + grosor, dy + grosor))
-
-        surf_final.blit(surf_base, (grosor, grosor))
-        return surf_final
+        self.btn_mute = BotonMute(10, 10)
+        self.ticks = 0
 
     def dibujar(self):
+        self.ticks += 1
         ancho, alto = self.pantalla.get_size()
-        # Canvas Rosa / Magenta
-        self.pantalla.fill((226, 120, 190))
 
-        # Ventana modal azul con borde rojo brillante
-        w_win, h_win = min(680, ancho - 60), min(520, alto - 60)
+        # Canvas de fondo violeta según diseño en Figma
+        self.pantalla.fill((46, 21, 90))
+
+        # Ventana modal Glassmorphism azul marino con borde dorado resplandeciente
+        w_win, h_win = min(720, ancho - 40), min(540, alto - 40)
         rect_win = pygame.Rect((ancho - w_win) // 2, (alto - h_win) // 2, w_win, h_win)
 
-        pygame.draw.rect(self.pantalla, (16, 56, 168), rect_win, border_radius=10)
-        pygame.draw.rect(self.pantalla, (220, 20, 60), rect_win, width=4, border_radius=10)
+        dibujar_panel_glassmorphism(
+            self.pantalla, rect_win,
+            color_bg=(16, 35, 95, 230),
+            color_borde=(255, 215, 0, 220),
+            radio=20, grosor_borde=3
+        )
 
         # Encabezado "NUEVA PARTIDA"
-        txt_tit = self._render_texto_delineado("NUEVA PARTIDA", self.fuente_titulo, (255, 255, 255), (0, 0, 0), 3)
-        rect_tit = txt_tit.get_rect(center=(ancho // 2, rect_win.y + 45))
-        self.pantalla.blit(txt_tit, rect_tit)
+        dibujar_texto_glow(
+            self.pantalla, "NUEVA PARTIDA", self.fuente_titulo,
+            ancho // 2, rect_win.y + 40,
+            color_texto=(255, 255, 255), color_resplandor=(255, 215, 0), centro=True
+        )
 
-        # Doble subrayado debajo del título
-        y_line = rect_tit.bottom - 4
-        pygame.draw.line(self.pantalla, (255, 255, 255), (rect_tit.x + 10, y_line), (rect_tit.right - 10, y_line), 2)
-        pygame.draw.line(self.pantalla, (255, 255, 255), (rect_tit.x + 10, y_line + 4), (rect_tit.right - 10, y_line + 4), 2)
+        # 1. Selector de Cantidad de Jugadores
+        txt_c1 = self.fuente_sub.render("Cantidad de Jugadores:", True, (220, 240, 255))
+        self.pantalla.blit(txt_c1, (rect_win.x + 45, rect_win.y + 95))
 
-        pos_m = pygame.mouse.get_pos()
+        # Botón -
+        self.btn_menos_inst = BotonModerno(
+            (rect_win.x + 310, rect_win.y + 88, 36, 36), "-",
+            color_base=(220, 40, 50), color_hover=(250, 60, 70),
+            fuente=self.fuente_sub
+        )
+        self.btn_menos_inst.dibujar(self.pantalla)
 
-        # 1. Cantidad Jugadores (izquierda)
-        txt_c1 = self._render_texto_delineado("Cantidad", self.fuente_sub, (255, 255, 255), (0, 0, 0), 2)
-        txt_c2 = self._render_texto_delineado("Jugadores", self.fuente_sub, (255, 255, 255), (0, 0, 0), 2)
-        self.pantalla.blit(txt_c1, (rect_win.x + 45, rect_win.y + 105))
-        self.pantalla.blit(txt_c2, (rect_win.x + 45, rect_win.y + 128))
-
-        # Botón - (Rojo)
-        self.btn_menos = pygame.Rect(rect_win.x + 215, rect_win.y + 122, 22, 22)
-        pygame.draw.rect(self.pantalla, (220, 30, 40), self.btn_menos)
-        txt_m = self._render_texto_delineado("-", self.fuente_sub, (255, 255, 255), (0, 0, 0), 2)
-        self.pantalla.blit(txt_m, txt_m.get_rect(center=self.btn_menos.center))
-
-        # Círculo central rojo con la cantidad
-        rect_circ_cant = pygame.Rect(rect_win.x + 250, rect_win.y + 105, 52, 52)
-        pygame.draw.circle(self.pantalla, (220, 30, 40), rect_circ_cant.center, 26)
-        pygame.draw.circle(self.pantalla, (20, 20, 20), rect_circ_cant.center, 26, width=2)
-        txt_c = self._render_texto_delineado(str(self.cant_jugadores), self.fuente_titulo, (255, 255, 255), (0, 0, 0), 3)
+        # Círculo central indicador de cantidad
+        rect_circ_cant = pygame.Rect(rect_win.x + 360, rect_win.y + 82, 48, 48)
+        pygame.draw.circle(self.pantalla, (255, 215, 0), rect_circ_cant.center, 24)
+        pygame.draw.circle(self.pantalla, (20, 20, 20), rect_circ_cant.center, 24, width=2)
+        txt_c = self.fuente_sub.render(str(self.cant_jugadores), True, (20, 20, 20))
         self.pantalla.blit(txt_c, txt_c.get_rect(center=rect_circ_cant.center))
 
-        # Botón + (Rojo)
-        self.btn_mas = pygame.Rect(rect_win.x + 315, rect_win.y + 122, 22, 22)
-        pygame.draw.rect(self.pantalla, (220, 30, 40), self.btn_mas)
-        txt_p = self._render_texto_delineado("+", self.fuente_sub, (255, 255, 255), (0, 0, 0), 2)
-        self.pantalla.blit(txt_p, txt_p.get_rect(center=self.btn_mas.center))
+        # Botón +
+        self.btn_mas_inst = BotonModerno(
+            (rect_win.x + 420, rect_win.y + 88, 36, 36), "+",
+            color_base=(220, 40, 50), color_hover=(250, 60, 70),
+            fuente=self.fuente_sub
+        )
+        self.btn_mas_inst.dibujar(self.pantalla)
 
-        # 2. Jugadores (Etiqueta + 4 Píldoras en cuadrícula 2x2)
-        txt_j_lbl = self._render_texto_delineado("Jugadores", self.fuente_sub, (255, 255, 255), (0, 0, 0), 2)
-        self.pantalla.blit(txt_j_lbl, (rect_win.x + 45, rect_win.y + 185))
-
+        # 2. Configuración de Jugadores (Cuadrícula 2x2 de Píldoras/Tarjetas)
         self.rects_nombres = []
         self.rects_arrow_left = []
         self.rects_arrow_right = []
 
-        # Bordes coloridos de cada entrada según Figma:
-        # P1: Rojo (#FF0000), P2: Verde (#00C853), P3: Azul (#0091EA), P4: Amarillo (#FFD600)
-        colores_borde_pildoras = [(255, 0, 0), (0, 200, 83), (0, 145, 234), (255, 214, 0)]
+        colores_borde_pildoras = [(255, 60, 60), (40, 220, 100), (40, 160, 255), (255, 215, 0)]
+        colores_fondo_badge = [(100, 20, 20), (20, 80, 40), (20, 50, 100), (100, 85, 20)]
 
-        w_pill, h_pill = 220, 38
+        w_pill, h_pill = 240, 52
         offsets_grid = [
-            (rect_win.x + 80, rect_win.y + 225),   # Top Left (P1)
-            (rect_win.x + 360, rect_win.y + 225),  # Top Right (P2)
-            (rect_win.x + 80, rect_win.y + 285),   # Bottom Left (P3)
-            (rect_win.x + 360, rect_win.y + 285)   # Bottom Right (P4)
+            (rect_win.x + 80, rect_win.y + 165),   # P1 Top Left
+            (rect_win.x + 380, rect_win.y + 165),  # P2 Top Right
+            (rect_win.x + 80, rect_win.y + 245),   # P3 Bottom Left
+            (rect_win.x + 380, rect_win.y + 245)   # P4 Bottom Right
         ]
+
+        pos_m = pygame.mouse.get_pos()
 
         for i in range(4):
             if i >= self.cant_jugadores:
-                # Ocultar o deshabilitar jugadores que excedan la cantidad seleccionada
                 continue
 
             rx, py = offsets_grid[i]
             rect_pill = pygame.Rect(rx, py, w_pill, h_pill)
             self.rects_nombres.append(rect_pill)
 
-            # Fondo blanco de píldora
-            pygame.draw.rect(self.pantalla, (255, 255, 255), rect_pill, border_radius=19)
-
-            # Borde colorido especifico de cada jugador
             col_borde = colores_borde_pildoras[i]
-            pygame.draw.rect(self.pantalla, col_borde, rect_pill, width=3, border_radius=19)
+            col_bg_badge = colores_fondo_badge[i]
+
+            # Tarjeta Glassmorphism
+            dibujar_panel_glassmorphism(
+                self.pantalla, rect_pill,
+                color_bg=(col_bg_badge[0], col_bg_badge[1], col_bg_badge[2], 210),
+                color_borde=col_borde, radio=14
+            )
 
             # Flecha izquierda
-            r_left = pygame.Rect(rx - 22, py + 8, 20, 22)
+            r_left = pygame.Rect(rx - 28, py + 12, 24, 28)
             self.rects_arrow_left.append(r_left)
-            pygame.draw.polygon(self.pantalla, (200, 200, 200), [(r_left.right, r_left.y), (r_left.x, r_left.centery), (r_left.right, r_left.bottom)])
-            pygame.draw.polygon(self.pantalla, (20, 20, 20), [(r_left.right, r_left.y), (r_left.x, r_left.centery), (r_left.right, r_left.bottom)], width=2)
+            col_fl = (255, 215, 0) if r_left.collidepoint(pos_m) else (200, 200, 200)
+            pygame.draw.polygon(self.pantalla, col_fl, [(r_left.right, r_left.y), (r_left.x, r_left.centery), (r_left.right, r_left.bottom)])
 
             # Flecha derecha
-            r_right = pygame.Rect(rx + w_pill + 2, py + 8, 20, 22)
+            r_right = pygame.Rect(rx + w_pill + 4, py + 12, 24, 28)
             self.rects_arrow_right.append(r_right)
-            pygame.draw.polygon(self.pantalla, (200, 200, 200), [(r_right.x, r_right.y), (r_right.right, r_right.centery), (r_right.x, r_right.bottom)])
-            pygame.draw.polygon(self.pantalla, (20, 20, 20), [(r_right.x, r_right.y), (r_right.right, r_right.centery), (r_right.x, r_right.bottom)], width=2)
+            col_fr = (255, 215, 0) if r_right.collidepoint(pos_m) else (200, 200, 200)
+            pygame.draw.polygon(self.pantalla, col_fr, [(r_right.x, r_right.y), (r_right.right, r_right.centery), (r_right.x, r_right.bottom)])
 
-            # Nombre dentro de la píldora
+            # Icono Avatar (Robot vs Persona)
+            icono_tipo = "🤖" if self.es_bot_lista[i] else "👤"
+            txt_ico = self.fuente_sub.render(icono_tipo, True, (255, 255, 255))
+            self.pantalla.blit(txt_ico, (rx + 12, py + 14))
+
+            # Nombre dentro de la tarjeta
             nom_str = self.nombres[i]
             if self.es_bot_lista[i]:
                 nom_str += " (Bot)"
 
-            txt_nom = self.fuente_pill.render(nom_str, True, (20, 20, 20))
-            self.pantalla.blit(txt_nom, txt_nom.get_rect(center=rect_pill.center))
+            # Si el campo está activo para escribir, mostrar indicador |
+            if self.campo_activo == i:
+                nom_str += "|"
+
+            txt_nom = self.fuente_pill.render(nom_str, True, (255, 255, 255))
+            self.pantalla.blit(txt_nom, (rx + 48, py + 16))
 
         # Mensaje de Error
         if self.mensaje_error:
-            txt_err = self.fuente_label.render(self.mensaje_error, True, (255, 100, 100))
-            self.pantalla.blit(txt_err, txt_err.get_rect(center=(ancho // 2, rect_win.bottom - 95)))
+            dibujar_texto_glow(
+                self.pantalla, self.mensaje_error, self.fuente_label,
+                ancho // 2, rect_win.bottom - 105,
+                color_texto=(255, 100, 100), color_resplandor=(255, 0, 0), centro=True
+            )
 
-        # Botón INICIAR (Rojo con borde Amarillo como Figma)
-        bw_btn, bh_btn = 220, 54
-        self.btn_iniciar = pygame.Rect((ancho - bw_btn) // 2, rect_win.bottom - 75, bw_btn, bh_btn)
-
-        hover = self.btn_iniciar.collidepoint(pos_m)
-        color_btn = (245, 40, 40) if hover else (225, 30, 30)
-
-        pygame.draw.rect(self.pantalla, color_btn, self.btn_iniciar, border_radius=6)
-        pygame.draw.rect(self.pantalla, (255, 230, 0), self.btn_iniciar, width=4, border_radius=6)
-
-        txt_ini = self._render_texto_delineado("INICIAR", self.fuente_boton, (255, 255, 255), (0, 0, 0), 3)
-        self.pantalla.blit(txt_ini, txt_ini.get_rect(center=self.btn_iniciar.center))
+        # Botón INICIAR
+        bw_btn, bh_btn = 220, 52
+        self.btn_iniciar_inst = BotonModerno(
+            ((ancho - bw_btn) // 2, rect_win.bottom - 75, bw_btn, bh_btn),
+            "INICIAR",
+            color_base=(220, 30, 40), color_hover=(250, 50, 60),
+            color_borde=(255, 230, 0), fuente=self.fuente_boton, icono="⚔️"
+        )
+        self.btn_iniciar_inst.dibujar(self.pantalla)
 
         # Botón Volver (X)
-        self.btn_volver = pygame.Rect(rect_win.x + 15, rect_win.y + 15, 32, 32)
-        pygame.draw.rect(self.pantalla, (220, 30, 40), self.btn_volver, border_radius=4)
-        txt_v = self._render_texto_delineado("X", self.fuente_sub, (255, 255, 255), (0, 0, 0), 2)
-        self.pantalla.blit(txt_v, txt_v.get_rect(center=self.btn_volver.center))
+        self.btn_volver_inst = BotonModerno(
+            (rect_win.x + 15, rect_win.y + 15, 36, 36), "X",
+            color_base=(200, 40, 50), fuente=self.fuente_sub
+        )
+        self.btn_volver_inst.dibujar(self.pantalla)
 
     def manejar_evento(self, evento):
+
         if evento.type == pygame.MOUSEBUTTONDOWN and evento.button == 1:
             pos = evento.pos
 
-            if self.btn_menos.collidepoint(pos):
+            if hasattr(self, 'btn_menos_inst') and self.btn_menos_inst.es_cliqueado(evento):
                 if self.cant_jugadores > 2:
                     self.cant_jugadores -= 1
                     self.mensaje_error = ""
 
-            elif self.btn_mas.collidepoint(pos):
+            elif hasattr(self, 'btn_mas_inst') and self.btn_mas_inst.es_cliqueado(evento):
                 if self.cant_jugadores < 4:
                     self.cant_jugadores += 1
                     self.mensaje_error = ""
@@ -232,11 +232,11 @@ class PantallaConfiguracion:
                     self.campo_activo = idx
                     break
 
-            if self.btn_iniciar.collidepoint(pos):
+            if hasattr(self, 'btn_iniciar_inst') and self.btn_iniciar_inst.es_cliqueado(evento):
                 if self._validar_configuracion():
                     self._crear_y_comenzar_partida()
 
-            elif self.btn_volver.collidepoint(pos):
+            elif hasattr(self, 'btn_volver_inst') and self.btn_volver_inst.es_cliqueado(evento):
                 self.gestor.estado = "MENU"
 
         elif evento.type == pygame.KEYDOWN and self.campo_activo is not None:

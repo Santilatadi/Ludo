@@ -1,0 +1,514 @@
+{
+    "version": 1,
+    "ultima_actualizacion": "19/10/2026 08:02:44",
+    "partidas": {
+        "partida_1792271977_76fdc9": {
+            "id_partida": "partida_1792271977_76fdc9",
+            "cantidadJugadores": 4,
+            "estado": "EN_CURSO",
+            "turnoActual": 0,
+            "dado": 0,
+            "consecutivoSeis": 0,
+            "dado_lanzado": false,
+            "esperando_movimiento": false,
+            "mensaje_estado": "¡Comienza la partida! Turno de Jugador 1.",
+            "turnos_totales": 1,
+            "tiempo_acumulado": 9.061264991760254,
+            "ganador": null,
+            "jugadores": [
+                {
+                    "nombre": "Jugador 1",
+                    "color": "ROJO",
+                    "es_bot": false,
+                    "movimientos": 0,
+                    "fichas": [
+                        {
+                            "id_ficha": 1,
+                            "color": "ROJO",
+                            "posicion": 0,
+                            "enBase": true,
+                            "enMeta": false
+                        },
+                        {
+                            "id_ficha": 2,
+                            "color": "ROJO",
+                            "posicion": 0,
+                            "enBase": true,
+                            "enMeta": false
+                        },
+                        {
+                            "id_ficha": 3,
+                            "color": "ROJO",
+                            "posicion": 0,
+                            "enBase": true,
+                            "enMeta": false
+                        },
+                        {
+                            "id_ficha": 4,
+                            "color": "ROJO",
+                            "posicion": 0,
+                            "enBase": true,
+                            "enMeta": false
+                        }
+                    ]
+                },
+                {
+                    "nombre": "Jugador 2",
+                    "color": "AZUL",
+                    "es_bot": true,
+                    "movimientos": 0,
+                    "fichas": [
+                        {
+                            "id_ficha": 1,
+                            "color": "AZUL",
+                            "posicion": 0,
+                            "enBase": true,
+                            "enMeta": false
+                        },
+                        {
+                            "id_ficha": 2,
+                            "color": "AZUL",
+                            "posicion": 0,
+                            "enBase": true,
+                            "enMeta": false
+                        },
+                        {
+                            "id_ficha": 3,
+                            "color": "AZUL",
+                            "posicion": 0,
+                            "enBase": true,
+                            "enMeta": false
+                        },
+                        {
+                            "id_ficha": 4,
+                            "color": "AZUL",
+                            "posicion": 0,
+                            "enBase": true,
+                            "enMeta": false
+                        }
+                    ]
+                },
+                {
+                    "nombre": "Jugador 3",
+                    "color": "VERDE",
+                    "es_bot": true,
+                    "movimientos": 0,
+                    "fichas": [
+                        {
+                            "id_ficha": 1,
+                            "color": "VERDE",
+                            "posicion": 0,
+                            "enBase": true,
+                            "enMeta": false
+                        },
+                        {
+                            "id_ficha": 2,
+                            "color": "VERDE",
+                            "posicion": 0,
+                            "enBase": true,
+                            "enMeta": false
+                        },
+                        {
+                            "id_ficha": 3,
+                            "color": "VERDE",
+                            "posicion": 0,
+                            "enBase": true,
+                            "enMeta": false
+                        },
+                        {
+                            "id_ficha": 4,
+                            "color": "VERDE",
+                            "posicion": 0,
+                            "enBase": true,
+                            "enMeta": false
+                        }
+                    ]
+                },
+                {
+                    "nombre": "Jugador 4",
+                    "color": "AMARILLO",
+                    "es_bot": true,
+                    "movimientos": 0,
+                    "fichas": [
+                        {
+                            "id_ficha": 1,
+                            "color": "AMARILLO",
+                            "posicion": 0,
+                            "enBase": true,
+                            "enMeta": false
+                        },
+                        {
+                            "id_ficha": 2,
+                            "color": "AMARILLO",
+                            "posicion": 0,
+                            "enBase": true,
+                            "enMeta": false
+                        },
+                        {
+                            "id_ficha": 3,
+                            "color": "AMARILLO",
+                            "posicion": 0,
+                            "enBase": true,
+                            "enMeta": false
+                        },
+                        {
+                            "id_ficha": 4,
+                            "color": "AMARILLO",
+                            "posicion": 0,
+                            "enBase": true,
+                            "enMeta": false
+                        }
+                    ]
+                }
+            ],
+            "fecha_guardado": "17/10/2026 18:19:46",
+            "fecha_creacion": "17/10/2026 18:19:39",
+            "timestamp_guardado": 1792271986.857049
+        },
+        "partida_1792271994_47597e": {
+            "id_partida": "partida_1792271994_47597e",
+            "cantidadJugadores": 4,
+            "estado": "EN_CURSO",
+            "turnoActual": 0,
+            "dado": 0,
+            "consecutivoSeis": 0,
+            "dado_lanzado": false,
+            "esperando_movimiento": false,
+            "mensaje_estado": "¡Comienza la partida! Turno de Jugador 1.",
+            "turnos_totales": 1,
+            "tiempo_acumulado": 1.6956110000610352,
+            "ganador": null,
+            "jugadores": [
+                {
+                    "nombre": "Jugador 1",
+                    "color": "ROJO",
+                    "es_bot": false,
+                    "movimientos": 0,
+                    "fichas": [
+                        {
+                            "id_ficha": 1,
+                            "color": "ROJO",
+                            "posicion": 0,
+                            "enBase": true,
+                            "enMeta": false
+                        },
+                        {
+                            "id_ficha": 2,
+                            "color": "ROJO",
+                            "posicion": 0,
+                            "enBase": true,
+                            "enMeta": false
+                        },
+                        {
+                            "id_ficha": 3,
+                            "color": "ROJO",
+                            "posicion": 0,
+                            "enBase": true,
+                            "enMeta": false
+                        },
+                        {
+                            "id_ficha": 4,
+                            "color": "ROJO",
+                            "posicion": 0,
+                            "enBase": true,
+                            "enMeta": false
+                        }
+                    ]
+                },
+                {
+                    "nombre": "Jugador 2",
+                    "color": "AZUL",
+                    "es_bot": true,
+                    "movimientos": 0,
+                    "fichas": [
+                        {
+                            "id_ficha": 1,
+                            "color": "AZUL",
+                            "posicion": 0,
+                            "enBase": true,
+                            "enMeta": false
+                        },
+                        {
+                            "id_ficha": 2,
+                            "color": "AZUL",
+                            "posicion": 0,
+                            "enBase": true,
+                            "enMeta": false
+                        },
+                        {
+                            "id_ficha": 3,
+                            "color": "AZUL",
+                            "posicion": 0,
+                            "enBase": true,
+                            "enMeta": false
+                        },
+                        {
+                            "id_ficha": 4,
+                            "color": "AZUL",
+                            "posicion": 0,
+                            "enBase": true,
+                            "enMeta": false
+                        }
+                    ]
+                },
+                {
+                    "nombre": "Jugador 3",
+                    "color": "VERDE",
+                    "es_bot": true,
+                    "movimientos": 0,
+                    "fichas": [
+                        {
+                            "id_ficha": 1,
+                            "color": "VERDE",
+                            "posicion": 0,
+                            "enBase": true,
+                            "enMeta": false
+                        },
+                        {
+                            "id_ficha": 2,
+                            "color": "VERDE",
+                            "posicion": 0,
+                            "enBase": true,
+                            "enMeta": false
+                        },
+                        {
+                            "id_ficha": 3,
+                            "color": "VERDE",
+                            "posicion": 0,
+                            "enBase": true,
+                            "enMeta": false
+                        },
+                        {
+                            "id_ficha": 4,
+                            "color": "VERDE",
+                            "posicion": 0,
+                            "enBase": true,
+                            "enMeta": false
+                        }
+                    ]
+                },
+                {
+                    "nombre": "Jugador 4",
+                    "color": "AMARILLO",
+                    "es_bot": true,
+                    "movimientos": 0,
+                    "fichas": [
+                        {
+                            "id_ficha": 1,
+                            "color": "AMARILLO",
+                            "posicion": 0,
+                            "enBase": true,
+                            "enMeta": false
+                        },
+                        {
+                            "id_ficha": 2,
+                            "color": "AMARILLO",
+                            "posicion": 0,
+                            "enBase": true,
+                            "enMeta": false
+                        },
+                        {
+                            "id_ficha": 3,
+                            "color": "AMARILLO",
+                            "posicion": 0,
+                            "enBase": true,
+                            "enMeta": false
+                        },
+                        {
+                            "id_ficha": 4,
+                            "color": "AMARILLO",
+                            "posicion": 0,
+                            "enBase": true,
+                            "enMeta": false
+                        }
+                    ]
+                }
+            ],
+            "fecha_guardado": "17/10/2026 18:19:56",
+            "fecha_creacion": "17/10/2026 18:19:56",
+            "timestamp_guardado": 1792271996.34802
+        },
+        "partida_1792407464_cb7c77": {
+            "id_partida": "partida_1792407464_cb7c77",
+            "cantidadJugadores": 2,
+            "estado": "EN_CURSO",
+            "turnoActual": 0,
+            "dado": 0,
+            "consecutivoSeis": 0,
+            "dado_lanzado": false,
+            "esperando_movimiento": false,
+            "mensaje_estado": "¡Comienza la partida! Turno de Jugador 1.",
+            "turnos_totales": 1,
+            "tiempo_acumulado": 5.504109144210815,
+            "ganador": null,
+            "jugadores": [
+                {
+                    "nombre": "Jugador 1",
+                    "color": "ROJO",
+                    "es_bot": false,
+                    "movimientos": 0,
+                    "fichas": [
+                        {
+                            "id_ficha": 1,
+                            "color": "ROJO",
+                            "posicion": 0,
+                            "enBase": true,
+                            "enMeta": false
+                        },
+                        {
+                            "id_ficha": 2,
+                            "color": "ROJO",
+                            "posicion": 0,
+                            "enBase": true,
+                            "enMeta": false
+                        },
+                        {
+                            "id_ficha": 3,
+                            "color": "ROJO",
+                            "posicion": 0,
+                            "enBase": true,
+                            "enMeta": false
+                        },
+                        {
+                            "id_ficha": 4,
+                            "color": "ROJO",
+                            "posicion": 0,
+                            "enBase": true,
+                            "enMeta": false
+                        }
+                    ]
+                },
+                {
+                    "nombre": "Jugador 2",
+                    "color": "AZUL",
+                    "es_bot": true,
+                    "movimientos": 0,
+                    "fichas": [
+                        {
+                            "id_ficha": 1,
+                            "color": "AZUL",
+                            "posicion": 0,
+                            "enBase": true,
+                            "enMeta": false
+                        },
+                        {
+                            "id_ficha": 2,
+                            "color": "AZUL",
+                            "posicion": 0,
+                            "enBase": true,
+                            "enMeta": false
+                        },
+                        {
+                            "id_ficha": 3,
+                            "color": "AZUL",
+                            "posicion": 0,
+                            "enBase": true,
+                            "enMeta": false
+                        },
+                        {
+                            "id_ficha": 4,
+                            "color": "AZUL",
+                            "posicion": 0,
+                            "enBase": true,
+                            "enMeta": false
+                        }
+                    ]
+                }
+            ],
+            "fecha_guardado": "19/10/2026 07:57:49",
+            "fecha_creacion": "19/10/2026 07:57:47",
+            "timestamp_guardado": 1792407469.58609
+        },
+        "partida_1792407761_ade512": {
+            "id_partida": "partida_1792407761_ade512",
+            "cantidadJugadores": 2,
+            "estado": "EN_CURSO",
+            "turnoActual": 0,
+            "dado": 0,
+            "consecutivoSeis": 0,
+            "dado_lanzado": false,
+            "esperando_movimiento": false,
+            "mensaje_estado": "¡Comienza la partida! Turno de Jugador 1.",
+            "turnos_totales": 1,
+            "tiempo_acumulado": 2.951730728149414,
+            "ganador": null,
+            "jugadores": [
+                {
+                    "nombre": "Jugador 1",
+                    "color": "ROJO",
+                    "es_bot": false,
+                    "movimientos": 0,
+                    "fichas": [
+                        {
+                            "id_ficha": 1,
+                            "color": "ROJO",
+                            "posicion": 0,
+                            "enBase": true,
+                            "enMeta": false
+                        },
+                        {
+                            "id_ficha": 2,
+                            "color": "ROJO",
+                            "posicion": 0,
+                            "enBase": true,
+                            "enMeta": false
+                        },
+                        {
+                            "id_ficha": 3,
+                            "color": "ROJO",
+                            "posicion": 0,
+                            "enBase": true,
+                            "enMeta": false
+                        },
+                        {
+                            "id_ficha": 4,
+                            "color": "ROJO",
+                            "posicion": 0,
+                            "enBase": true,
+                            "enMeta": false
+                        }
+                    ]
+                },
+                {
+                    "nombre": "Jugador 2",
+                    "color": "AZUL",
+                    "es_bot": true,
+                    "movimientos": 0,
+                    "fichas": [
+                        {
+                            "id_ficha": 1,
+                            "color": "AZUL",
+                            "posicion": 0,
+                            "enBase": true,
+                            "enMeta": false
+                        },
+                        {
+                            "id_ficha": 2,
+                            "color": "AZUL",
+                            "posicion": 0,
+                            "enBase": true,
+                            "enMeta": false
+                        },
+                        {
+                            "id_ficha": 3,
+                            "color": "AZUL",
+                            "posicion": 0,
+                            "enBase": true,
+                            "enMeta": false
+                        },
+                        {
+                            "id_ficha": 4,
+                            "color": "AZUL",
+                            "posicion": 0,
+                            "enBase": true,
+                            "enMeta": false
+                        }
+                    ]
+                }
+            ],
+            "fecha_guardado": "19/10/2026 08:02:44",
+            "fecha_creacion": "19/10/2026 08:02:44",
+            "timestamp_guardado": 1792407764.31532
+        }
+    }
+}

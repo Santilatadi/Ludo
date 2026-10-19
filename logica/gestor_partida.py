@@ -85,3 +85,9 @@ class GestorPartida:
         # Reanuda la partida desde la pantalla de pausa.
         if self.estado == "PAUSA":
             self.estado = "JUEGO"
+
+    def reiniciarPartida(self):
+        # Reinicia la partida activa con los mismos jugadores desde cero.
+        if self.partidaActual:
+            self.partidaActual.reiniciar()
+            self.estado = "JUEGO"

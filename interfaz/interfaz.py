@@ -16,13 +16,15 @@ from interfaz.pantalla_pausa import PantallaPausa
 from interfaz.pantalla_reglas import PantallaReglas
 from interfaz.pantalla_estadisticas import PantallaEstadisticas
 from interfaz.pantalla_final import PantallaFinal
+from interfaz.efectos import SistemaParticulas
+from interfaz.sonidos import GestorSonidos
 
 
 class InterfazGrafica:
 
     def __init__(self, ancho=1024, alto=720):
         pygame.init()
-        pygame.display.set_caption("Juego Ludo")
+        pygame.display.set_caption("Ludo Imperial 3D - Edición Moderna")
 
         self.ancho_defecto = ancho
         self.alto_defecto = alto
@@ -31,6 +33,9 @@ class InterfazGrafica:
         self.pantalla = pygame.display.set_mode((ancho, alto), pygame.RESIZABLE)
         self.reloj = pygame.time.Clock()
         self.ejecutando = True
+
+        self.particulas = SistemaParticulas()
+        self.sonidos = GestorSonidos()
 
         self.gestor = GestorPartida()
         self.persistencia = Persistencia()
@@ -78,12 +83,16 @@ class InterfazGrafica:
                 self.ejecutando = False
                 return
 
-            elif evento.type == pygame.KEYDOWN and evento.key == pygame.K_F11:
-                self.toggle_pantalla_completa()
+            elif evento.type == pygame.KEYDOWN:
+                if evento.key == pygame.K_F11:
+                    self.toggle_pantalla_completa()
+                elif evento.key in (pygame.K_m, pygame.K_F10):
+                    self.sonidos.alternar_mute()
 
             elif evento.type == pygame.VIDEORESIZE and not self.pantalla_completa:
                 self.pantalla = pygame.display.set_mode((evento.w, evento.h), pygame.RESIZABLE)
                 self._actualizar_referencias_pantalla()
+
 
             estado = self.gestor.estado
 
@@ -105,6 +114,7 @@ class InterfazGrafica:
                 self.pantalla_final.manejar_evento(evento)
 
     def _actualizar_y_dibujar(self):
+        self.pantalla.fill((46, 21, 90))
         estado = self.gestor.estado
 
         if estado == "MENU":

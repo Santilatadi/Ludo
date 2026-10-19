@@ -18,6 +18,7 @@ class Jugador:
         self.color = color
         self.es_bot = es_bot
         self.fichas = [Ficha(i + 1, color) for i in range(4)]
+        self.movimientos = 0
 
     def obtenerFichas(self):
         # Devuelve la lista de las 4 fichas del jugador.
@@ -111,11 +112,12 @@ class Jugador:
         return movimientos_ordenados[0]
 
     def a_diccionario(self) -> dict:
-        # Serializa la información del jugador incluyendo el flag es_bot.
+        # Serializa la información del jugador incluyendo el flag es_bot y movimientos.
         return {
             "nombre": self.nombre,
             "color": self.color.name,
             "es_bot": self.es_bot,
+            "movimientos": getattr(self, "movimientos", 0),
             "fichas": [ficha.a_diccionario() for ficha in self.fichas]
         }
 
@@ -125,5 +127,6 @@ class Jugador:
         color_enum = Color[datos["color"]]
         es_bot = datos.get("es_bot", False)
         jugador = cls(datos["nombre"], color_enum, es_bot)
+        jugador.movimientos = datos.get("movimientos", 0)
         jugador.fichas = [Ficha.desde_diccionario(f_datos) for f_datos in datos["fichas"]]
         return jugador
