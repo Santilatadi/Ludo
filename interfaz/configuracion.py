@@ -15,7 +15,7 @@ if directorio_raiz not in sys.path:
 from modelos.color import Color
 from modelos.jugador import Jugador
 from interfaz.efectos import SistemaParticulas, dibujar_panel_glassmorphism, dibujar_texto_glow
-from interfaz.componentes import BotonModerno, BotonMute
+from interfaz.componentes import BotonModerno
 
 
 class PantallaConfiguracion:
@@ -45,7 +45,6 @@ class PantallaConfiguracion:
         self.campo_activo = None
         self.mensaje_error = ""
 
-        self.btn_mute = BotonMute(10, 10)
         self.ticks = 0
 
     def dibujar(self):

@@ -13,7 +13,7 @@ if directorio_raiz not in sys.path:
     sys.path.insert(0, directorio_raiz)
 
 from interfaz.efectos import dibujar_panel_glassmorphism, dibujar_texto_glow
-from interfaz.componentes import BotonModerno, BotonMute
+from interfaz.componentes import BotonModerno
 
 
 class PantallaPausa:
@@ -35,7 +35,6 @@ class PantallaPausa:
 
         self.confirmando_accion = None  # None, "REINICIAR" o "SALIR"
         self.mensaje_toast = ""
-        self.btn_mute = BotonMute(10, 10)
 
     def dibujar(self):
         ancho, alto = self.pantalla.get_size()

@@ -204,6 +204,7 @@ class Partida:
         return False
 
     def finalizar(self):
+        self.recopilarEstadisticas()
         self.estado = "FINALIZADA"
 
     def cancelarPartida(self) -> None:
@@ -213,9 +214,16 @@ class Partida:
 
     def pausar(self):
         self.estado = "PAUSADA"
+        state = _partida_state.setdefault(self, {})
+        t_inicio = state.get("tiempo_inicio")
+        if t_inicio:
+            state["tiempo_acumulado"] = state.get("tiempo_acumulado", 0) + (time.time() - t_inicio)
+            state["tiempo_inicio"] = None
 
     def reanudar(self):
         self.estado = "EN_CURSO"
+        state = _partida_state.setdefault(self, {})
+        state["tiempo_inicio"] = time.time()
 
     def conservarEstado(self):
         pass
@@ -240,12 +248,34 @@ class Partida:
         return self.estado == "EN_CURSO"
 
     def cerrarPartida(self) -> None:
-        self.estado = "FINALIZADA"
+        self.finalizar()
 
     def recopilarEstadisticas(self) -> str:
-        lineas = [f"Turnos jugados: {self.turnosJugados}"]
+        state = _partida_state.setdefault(self, {})
+        t_inicio = state.get("tiempo_inicio")
+        if t_inicio:
+            self.tiempoTranscurrido = max(0, int(time.time() - t_inicio + state.get("tiempo_acumulado", 0)))
+        elif "tiempo_acumulado" in state:
+            self.tiempoTranscurrido = max(0, int(state.get("tiempo_acumulado", 0)))
+
         for j in self.jugadores:
-            lineas.append(f"{j.nombre} ({j.color.value}): {j.movimientos} movimientos, {j.puntaje} puntos")
+            pts = 0
+            for f in j.fichas:
+                if f.enMeta:
+                    pts += 100
+                elif not f.enBase:
+                    pts += f.posicion
+            j.puntaje = pts
+
+        minutos = self.tiempoTranscurrido // 60
+        segundos = self.tiempoTranscurrido % 60
+        lineas = [
+            f"Tiempo transcurrido: {minutos:02d}:{segundos:02d}",
+            f"Turnos jugados: {self.turnosJugados}",
+            f"Ganador: {self.ganador.nombre if self.ganador else 'En curso'}"
+        ]
+        for j in self.jugadores:
+            lineas.append(f"{j.nombre} ({j.color.name}): {j.movimientos} movimientos, {j.puntaje} puntos")
         return "\n".join(lineas)
 
     def cerrarPantallaEstadisticas(self) -> None:

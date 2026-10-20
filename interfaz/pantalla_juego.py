@@ -11,8 +11,7 @@ import random
 import pygame
 from modelos.color import Color
 from interfaz.efectos import SistemaParticulas, dibujar_panel_glassmorphism, dibujar_texto_glow
-from interfaz.sonidos import GestorSonidos
-from interfaz.componentes import BotonModerno, BotonMute
+from interfaz.componentes import BotonModerno
 
 COLOR_RGB = {
     Color.ROJO: (220, 50, 50),
@@ -35,7 +34,6 @@ class PantallaJuego:
         self.gestor = gestor_partida
         self.interfaz_padre = interfaz_padre
         self.particulas = interfaz_padre.particulas if interfaz_padre else SistemaParticulas()
-        self.sonidos = GestorSonidos()
 
         ruta_fuente = "assets/font.ttf"
         if os.path.exists(ruta_fuente):
@@ -150,7 +148,6 @@ class PantallaJuego:
             if self.timer_bot >= 25:
                 self.animando_dado = True
                 self.frames_anim_dado = 12
-                self.sonidos.reproducir("dado")
                 self.timer_bot = 0
 
         elif partida.esperando_movimiento and not self.animando_dado:
@@ -167,7 +164,6 @@ class PantallaJuego:
                         if partida.estado == "FINALIZADA":
                             self.gestor.estado = "FINAL"
                             self.particulas.emitir_confeti(self.origen_x + self.ancho_tablero // 2, self.origen_y + self.alto_tablero // 2, 120)
-                            self.sonidos.reproducir("victoria")
                 self.timer_bot = 0
 
     def _seleccionar_mejor_movimiento_bot(self, jugador, movimientos_validos: list, tablero):
@@ -217,7 +213,6 @@ class PantallaJuego:
         #en lugar de hacer que la ficha aparezca directamente en el destino. 
         
         self.colas_anim_pasos[ficha] = pasos_coords
-        self.sonidos.reproducir("salto")
 
     def _dibujar_tablero_ludo(self):
         ox, oy = self.origen_x, self.origen_y
@@ -517,7 +512,6 @@ class PantallaJuego:
                 self.gestor.lanzarDado()
                 if partida.dado == 6:
                     self.particulas.emitir_estrellas(self.btn_lanzar.centerx, self.btn_lanzar.centery, 20)
-                    self.sonidos.reproducir("dado_seis")
 
         val_dado = self.dado_visual_temp if self.animando_dado else partida.dado
 
@@ -583,7 +577,6 @@ class PantallaJuego:
             elif self.btn_lanzar.collidepoint(pos) and es_humano and not partida.dado_lanzado and not self.animando_dado:
                 self.animando_dado = True
                 self.frames_anim_dado = 12
-                self.sonidos.reproducir("dado")
 
             elif es_humano and partida.esperando_movimiento and not self.animando_dado:
                 movimientos_validos = partida.obtenerMovimientosValidos()
@@ -599,5 +592,4 @@ class PantallaJuego:
                         if partida.estado == "FINALIZADA":
                             self.gestor.estado = "FINAL"
                             self.particulas.emitir_confeti(self.origen_x + self.ancho_tablero // 2, self.origen_y + self.alto_tablero // 2, 120)
-                            self.sonidos.reproducir("victoria")
                         break

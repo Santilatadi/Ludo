@@ -1,13 +1,12 @@
 """
 Modulo pantalla_final.py
 Dibuja e interactúa con la Pantalla de Victoria / Finalización (Menú Victoria).
-Celebra la victoria del ganador con ráfagas de confeti, efectos de resplandor y sonido de triunfo.
+Celebra la victoria del ganador con ráfagas de confeti y efectos de resplandor.
 """
 
 import pygame
 from interfaz.efectos import SistemaParticulas, dibujar_panel_glassmorphism, dibujar_texto_glow
-from interfaz.componentes import BotonModerno, BotonMute
-from interfaz.sonidos import GestorSonidos
+from interfaz.componentes import BotonModerno
 
 
 class PantallaFinal:
@@ -16,7 +15,6 @@ class PantallaFinal:
         self.pantalla = pantalla
         self.gestor = gestor_partida
         self.particulas = SistemaParticulas()
-        self.sonidos = GestorSonidos()
 
         self.fuente_banner = pygame.font.SysFont("Impact", 46, bold=True)
         if not self.fuente_banner:
@@ -25,7 +23,6 @@ class PantallaFinal:
         self.fuente_sub = pygame.font.SysFont("Arial", 22, bold=True)
         self.fuente_boton = pygame.font.SysFont("Arial", 22, bold=True)
 
-        self.btn_mute = BotonMute(10, 10)
         self.confeti_emitido = False
 
     def dibujar(self):
@@ -35,7 +32,6 @@ class PantallaFinal:
         if not self.confeti_emitido:
             self.confeti_emitido = True
             self.particulas.emitir_confeti(ancho // 2, alto // 2, 140)
-            self.sonidos.reproducir("victoria")
 
         # Capa translúcida sobre el juego
         superficie_oscura = pygame.Surface((ancho, alto), pygame.SRCALPHA)
@@ -95,7 +91,6 @@ class PantallaFinal:
         self.btn_menu_inst.dibujar(self.pantalla)
 
     def manejar_evento(self, evento):
-
         if hasattr(self, 'btn_reiniciar_inst') and self.btn_reiniciar_inst.es_cliqueado(evento):
             self.confeti_emitido = False
             self.gestor.reiniciarPartida()

@@ -5,9 +5,8 @@ Muestra un panel dashboard con tarjetas de tiempo, turnos, tabla de posiciones y
 """
 
 import pygame
-from logica.estadisticas import Estadisticas
 from interfaz.efectos import dibujar_panel_glassmorphism, dibujar_texto_glow
-from interfaz.componentes import BotonModerno, BotonMute
+from interfaz.componentes import BotonModerno
 
 
 class PantallaEstadisticas:
@@ -15,14 +14,11 @@ class PantallaEstadisticas:
     def __init__(self, pantalla, gestor_partida):
         self.pantalla = pantalla
         self.gestor = gestor_partida
-        self.estadisticas = Estadisticas()
 
         self.fuente_titulo = pygame.font.SysFont("Arial", 36, bold=True)
         self.fuente_sub = pygame.font.SysFont("Arial", 22, bold=True)
         self.fuente_tabla = pygame.font.SysFont("Arial", 18)
         self.fuente_boton = pygame.font.SysFont("Arial", 22, bold=True)
-
-        self.btn_mute = BotonMute(10, 10)
 
     def dibujar(self):
         ancho, alto = self.pantalla.get_size()
@@ -54,7 +50,13 @@ class PantallaEstadisticas:
             self.pantalla.blit(txt_nodata, txt_nodata.get_rect(center=(ancho // 2, alto // 2)))
             return
 
-        resumen = self.estadisticas.obtener_resumen(partida)
+        partida.recopilarEstadisticas()
+        segundos = getattr(partida, "tiempoTranscurrido", 0)
+        minutos = segundos // 60
+        seg_rest = segundos % 60
+        tiempo_str = f"{minutos:02d}:{seg_rest:02d}"
+        turnos_str = str(getattr(partida, "turnosJugados", 0))
+        ganador_str = partida.ganador.nombre if partida.ganador else "Ninguno"
 
         # Tarjetas de Información general (Tiempo y Turnos)
         rect_t = pygame.Rect(rect_box.x + 40, rect_box.y + 85, (rect_box.width - 100) // 2, 45)
@@ -63,8 +65,8 @@ class PantallaEstadisticas:
         dibujar_panel_glassmorphism(self.pantalla, rect_t, color_bg=(25, 50, 120, 200), color_borde=(0, 200, 255, 150), radio=10)
         dibujar_panel_glassmorphism(self.pantalla, rect_turn, color_bg=(25, 50, 120, 200), color_borde=(0, 200, 255, 150), radio=10)
 
-        txt_tiempo = self.fuente_sub.render(f"Tiempo: {resumen['tiempo']}", True, (220, 240, 255))
-        txt_turnos = self.fuente_sub.render(f"Turnos: {resumen['turnos_totales']}", True, (220, 240, 255))
+        txt_tiempo = self.fuente_sub.render(f"Tiempo: {tiempo_str}", True, (220, 240, 255))
+        txt_turnos = self.fuente_sub.render(f"Turnos: {turnos_str}", True, (220, 240, 255))
         self.pantalla.blit(txt_tiempo, txt_tiempo.get_rect(center=rect_t.center))
         self.pantalla.blit(txt_turnos, txt_turnos.get_rect(center=rect_turn.center))
 
@@ -82,10 +84,12 @@ class PantallaEstadisticas:
 
         # Filas de la tabla
         pos_y_fila = py_tabla + 45
-        for j_info in resumen["jugadores"]:
-            txt_n = self.fuente_tabla.render(j_info['nombre'], True, (240, 240, 240))
-            txt_m = self.fuente_tabla.render(str(j_info["movimientos"]), True, (240, 240, 240))
-            txt_p = self.fuente_tabla.render(f"{j_info['puntaje']} pts", True, (255, 220, 40))
+        for j in partida.jugadores:
+            movs = getattr(j, "movimientos", 0)
+            pts = getattr(j, "puntaje", 0)
+            txt_n = self.fuente_tabla.render(j.nombre, True, (240, 240, 240))
+            txt_m = self.fuente_tabla.render(str(movs), True, (240, 240, 240))
+            txt_p = self.fuente_tabla.render(f"{pts} pts", True, (255, 220, 40))
 
             self.pantalla.blit(txt_n, (rect_box.x + 50, pos_y_fila))
             self.pantalla.blit(txt_m, (rect_box.x + 310, pos_y_fila))
@@ -93,9 +97,9 @@ class PantallaEstadisticas:
             pos_y_fila += 35
 
         # Ganador si aplica
-        if resumen["ganador"] != "Ninguno":
+        if ganador_str != "Ninguno":
             dibujar_texto_glow(
-                self.pantalla, f"LÍDER ACTUAL: {resumen['ganador']}", self.fuente_sub,
+                self.pantalla, f"LÍDER ACTUAL: {ganador_str}", self.fuente_sub,
                 rect_box.x + 40, rect_box.bottom - 45,
                 color_texto=(255, 215, 0), color_resplandor=(255, 100, 0)
             )
@@ -109,6 +113,5 @@ class PantallaEstadisticas:
         self.btn_volver_inst.dibujar(self.pantalla)
 
     def manejar_evento(self, evento):
-
         if hasattr(self, 'btn_volver_inst') and self.btn_volver_inst.es_cliqueado(evento):
             self.gestor.volver()

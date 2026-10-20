@@ -17,7 +17,6 @@ from interfaz.pantalla_reglas import PantallaReglas
 from interfaz.pantalla_estadisticas import PantallaEstadisticas
 from interfaz.pantalla_final import PantallaFinal
 from interfaz.efectos import SistemaParticulas
-from interfaz.sonidos import GestorSonidos
 
 
 class InterfazGrafica:
@@ -35,7 +34,6 @@ class InterfazGrafica:
         self.ejecutando = True
 
         self.particulas = SistemaParticulas()
-        self.sonidos = GestorSonidos()
 
         self.gestor = GestorPartida()
         self.persistencia = Persistencia()
@@ -86,8 +84,6 @@ class InterfazGrafica:
             elif evento.type == pygame.KEYDOWN:
                 if evento.key == pygame.K_F11:
                     self.toggle_pantalla_completa()
-                elif evento.key in (pygame.K_m, pygame.K_F10):
-                    self.sonidos.alternar_mute()
 
             elif evento.type == pygame.VIDEORESIZE and not self.pantalla_completa:
                 self.pantalla = pygame.display.set_mode((evento.w, evento.h), pygame.RESIZABLE)

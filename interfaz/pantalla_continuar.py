@@ -7,7 +7,8 @@ Adaptada con contenedores glassmorphism, insignias de jugadores y botones modern
 import os
 import pygame
 from interfaz.efectos import dibujar_panel_glassmorphism, dibujar_texto_glow
-from interfaz.componentes import BotonModerno, BotonMute
+from interfaz.componentes import BotonModerno
+from persistencia.persistencia import listar_partidas, eliminar_partida
 
 
 class PantallaContinuar:
@@ -30,7 +31,6 @@ class PantallaContinuar:
             self.fuente_boton = pygame.font.SysFont("Arial", 22, bold=True)
 
         self.mensaje_error = ""
-        self.btn_mute = BotonMute(10, 10)
         self.indice_seleccionado = 0
         self.scroll_y = 0
         self.max_scroll = 0
@@ -66,7 +66,7 @@ class PantallaContinuar:
         self.rect_box = pygame.Rect(rect_win.x + 30, rect_win.y + 82, w_win - 60, h_win - 165)
         dibujar_panel_glassmorphism(self.pantalla, self.rect_box, color_bg=(10, 25, 65, 200), color_borde=(255, 255, 255, 120), radio=12)
 
-        self.partidas_actuales = self.persistencia.listar_partidas_guardadas()
+        self.partidas_actuales = listar_partidas(self.persistencia.rutaArchivo)
 
         if self.partidas_actuales:
             if self.indice_seleccionado >= len(self.partidas_actuales):
@@ -213,10 +213,10 @@ class PantallaContinuar:
 
         if 0 <= self.indice_seleccionado < len(self.partidas_actuales):
             id_sel = self.partidas_actuales[self.indice_seleccionado]["id_partida"]
-            exito, msg = self.persistencia.eliminarPartida(id_sel)
+            exito, msg = eliminar_partida(self.persistencia.rutaArchivo, id_sel)
             if exito:
                 self.mensaje_error = ""
-                self.partidas_actuales = self.persistencia.listar_partidas_guardadas()
+                self.partidas_actuales = listar_partidas(self.persistencia.rutaArchivo)
                 if self.indice_seleccionado >= len(self.partidas_actuales):
                     self.indice_seleccionado = max(0, len(self.partidas_actuales) - 1)
             else:

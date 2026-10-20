@@ -138,6 +138,8 @@ class GestorPartida:
         pass
 
     def verEstadisticas(self) -> None:
+        if self.partidaActual:
+            self.partidaActual.recopilarEstadisticas()
         self.estado_anterior = self.estado
         self.estado = "ESTADISTICAS"
 

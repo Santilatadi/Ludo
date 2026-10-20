@@ -11,7 +11,6 @@ Fielmente adaptado al diseño de Figma:
 import os
 import math
 import pygame
-from interfaz.sonidos import GestorSonidos
 
 
 class MenuPrincipal:
@@ -21,7 +20,6 @@ class MenuPrincipal:
         self.gestor = gestor_partida
         self.persistencia = persistencia
         self.interfaz_padre = interfaz_padre
-        self.sonidos = GestorSonidos()
 
         # Carga de tipografía personalizada
         ruta_fuente = "assets/font.ttf"
@@ -134,8 +132,6 @@ class MenuPrincipal:
     def _dibujar_boton_dos_lineas(self, rect, linea1, linea2, pos_mouse):
         hover = rect.collidepoint(pos_mouse)
         clave = f"{linea1}_{linea2}"
-        if hover and not self.hover_prev.get(clave, False):
-            self.sonidos.reproducir("hover")
         self.hover_prev[clave] = hover
 
         # Relleno azul con elevación sutil en hover
@@ -161,14 +157,11 @@ class MenuPrincipal:
         if evento.type == pygame.MOUSEBUTTONDOWN and evento.button == 1:
             pos = evento.pos
             if self.btn_nueva.collidepoint(pos):
-                self.sonidos.reproducir("click")
                 self.gestor.mensaje_error = ""
                 self.gestor.estado = "CONFIGURACION"
             elif self.btn_continuar.collidepoint(pos):
-                self.sonidos.reproducir("click")
                 self.gestor.mensaje_error = ""
                 self.gestor.estado = "CONTINUAR"
             elif self.btn_salir.collidepoint(pos):
-                self.sonidos.reproducir("click")
                 pygame.quit()
                 exit()

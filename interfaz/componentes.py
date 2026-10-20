@@ -1,11 +1,10 @@
 """
 Modulo componentes.py
 Componentes de interfaz de usuario modernos, interactivos y adaptativos para Pygame.
-Incluye botones con animación suave de escalado, efectos sonoros y controles de audio.
+Incluye botones con animación suave de escalado y diseño glassmorphism.
 """
 
 import pygame
-from interfaz.sonidos import GestorSonidos
 from interfaz.efectos import dibujar_panel_glassmorphism, dibujar_texto_glow
 
 
@@ -24,14 +23,10 @@ class BotonModerno:
         self.es_hover = False
         self.es_hover_prev = False
         self.escala_actual = 1.0
-        self.sonidos = GestorSonidos()
 
     def actualizar(self, pos_mouse):
         self.es_hover_prev = self.es_hover
         self.es_hover = self.rect_base.collidepoint(pos_mouse)
-
-        if self.es_hover and not self.es_hover_prev:
-            self.sonidos.reproducir("hover")
 
         target_escala = 1.04 if self.es_hover else 1.0
         self.escala_actual += (target_escala - self.escala_actual) * 0.25
@@ -65,18 +60,5 @@ class BotonModerno:
     def es_cliqueado(self, evento):
         if evento.type == pygame.MOUSEBUTTONDOWN and evento.button == 1:
             if self.rect_anim.collidepoint(evento.pos):
-                self.sonidos.reproducir("click")
                 return True
-        return False
-
-
-class BotonMute:
-    def __init__(self, x, y, tam=36):
-        self.rect = pygame.Rect(x, y, tam, tam)
-        self.sonidos = GestorSonidos()
-
-    def dibujar(self, pantalla, fuente=None):
-        pass
-
-    def es_cliqueado(self, evento):
         return False
