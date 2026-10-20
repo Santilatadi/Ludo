@@ -2,11 +2,11 @@
     "cantidadJugadores": 2,
     "estado": "EN_CURSO",
     "turnoActual": 0,
-    "dado": 3,
+    "dado": 4,
     "consecutivoSeis": 0,
-    "dado_lanzado": true,
-    "esperando_movimiento": true,
-    "mensaje_estado": "Fel sacó un 3. Selecciona una ficha para mover.",
+    "dado_lanzado": false,
+    "esperando_movimiento": false,
+    "mensaje_estado": "Turno de Fel. ¡Lanza el dado!",
     "ganador": null,
     "jugadores": [
         {
@@ -17,28 +17,28 @@
                 {
                     "id_ficha": 1,
                     "color": "ROJO",
-                    "posicion": 0,
-                    "enBase": true,
+                    "posicion": 57,
+                    "enBase": false,
                     "enMeta": false
                 },
                 {
                     "id_ficha": 2,
                     "color": "ROJO",
-                    "posicion": 5,
+                    "posicion": 11,
                     "enBase": false,
                     "enMeta": false
                 },
                 {
                     "id_ficha": 3,
                     "color": "ROJO",
-                    "posicion": 10,
+                    "posicion": 58,
                     "enBase": false,
-                    "enMeta": false
+                    "enMeta": true
                 },
                 {
                     "id_ficha": 4,
                     "color": "ROJO",
-                    "posicion": 3,
+                    "posicion": 15,
                     "enBase": false,
                     "enMeta": false
                 }
@@ -52,16 +52,16 @@
                 {
                     "id_ficha": 1,
                     "color": "AZUL",
-                    "posicion": 0,
-                    "enBase": true,
-                    "enMeta": false
+                    "posicion": 58,
+                    "enBase": false,
+                    "enMeta": true
                 },
                 {
                     "id_ficha": 2,
                     "color": "AZUL",
-                    "posicion": 0,
-                    "enBase": true,
-                    "enMeta": false
+                    "posicion": 58,
+                    "enBase": false,
+                    "enMeta": true
                 },
                 {
                     "id_ficha": 3,
@@ -73,8 +73,8 @@
                 {
                     "id_ficha": 4,
                     "color": "AZUL",
-                    "posicion": 0,
-                    "enBase": true,
+                    "posicion": 53,
+                    "enBase": false,
                     "enMeta": false
                 }
             ]
