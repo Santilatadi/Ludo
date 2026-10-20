@@ -3,7 +3,9 @@ from modelos.color import Color
 from modelos.ficha import Ficha
 
 _tablero_jugadores = weakref.WeakKeyDictionary()
-_COLOR_IDX = {Color.ROJO: 0, Color.AZUL: 1, Color.AMARILLO: 2, Color.VERDE: 3}
+# Índice de cada color en self.inicio (salidas 0, 13, 26, 39), en el sentido del recorrido:
+# ROJO sale a la izquierda, VERDE arriba, AMARILLO a la derecha y AZUL abajo.
+_COLOR_IDX = {Color.ROJO: 0, Color.VERDE: 1, Color.AMARILLO: 2, Color.AZUL: 3}
 _CASILLAS_SEGURAS = {0, 8, 13, 21, 26, 34, 39, 47}
 
 

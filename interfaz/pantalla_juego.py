@@ -169,7 +169,7 @@ class PantallaJuego:
     def _seleccionar_mejor_movimiento_bot(self, jugador, movimientos_validos: list, tablero):
         if not movimientos_validos:
             return None
-        salida_colores = {Color.ROJO: 0, Color.AZUL: 13, Color.AMARILLO: 26, Color.VERDE: 39}
+        salida_colores = {Color.ROJO: 0, Color.VERDE: 13, Color.AMARILLO: 26, Color.AZUL: 39}
         casillas_seguras = {0, 8, 13, 21, 26, 34, 39, 47}
         partida = self.gestor.partidaActual
         if partida:
@@ -382,7 +382,7 @@ class PantallaJuego:
         elif pos == 58 or ficha.enMeta:
             return ox + 7.5 * cs, oy + 7.5 * cs
         elif pos <= 51:
-            salida_colores = {Color.ROJO: 0, Color.AZUL: 13, Color.AMARILLO: 26, Color.VERDE: 39}
+            salida_colores = {Color.ROJO: 0, Color.VERDE: 13, Color.AMARILLO: 26, Color.AZUL: 39}
             c_global = (salida_colores.get(ficha.color, 0) + (pos - 1)) % 52
             r, c = self.GRID_CIRCUITO_52[c_global]
             return ox + (c + 0.5) * cs, oy + (r + 0.5) * cs

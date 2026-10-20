@@ -52,7 +52,10 @@ def _reconstruir_partida(datos: dict) -> Partida:
         partida = Partida()
         partida.id_partida = datos.get("id_partida") or f"partida_{int(time.time())}_{uuid.uuid4().hex[:6]}"
         partida.cantidadJugadores = datos.get("cantidadJugadores", 2)
-        partida.estado = datos.get("estado", "EN_CURSO")
+        # Se guarda desde la pausa, así que el estado llega como "PAUSADA".
+        # Al cargarla se retoma el juego; si quedara en pausa, los bots no tiran el dado.
+        estado = datos.get("estado", "EN_CURSO")
+        partida.estado = "EN_CURSO" if estado == "PAUSADA" else estado
         partida.turnoActual = datos.get("turnoActual", 0)
         partida.dado = datos.get("dado", 0)
         partida.turnosJugados = datos.get("turnosJugados", datos.get("turnos_totales", 1))
