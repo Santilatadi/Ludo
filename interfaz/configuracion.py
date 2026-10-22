@@ -42,6 +42,7 @@ class PantallaConfiguracion:
         self.es_bot_lista = [False, True, True, True]
         self.nombres = ["Jugador 1", "Jugador 2", "Jugador 3", "Jugador 4"]
         self.colores = [Color.ROJO, Color.AZUL, Color.VERDE, Color.AMARILLO]
+        self.rects_colores = []
         self.campo_activo = None
         self.mensaje_error = ""
 
@@ -103,6 +104,7 @@ class PantallaConfiguracion:
         self.rects_nombres = []
         self.rects_arrow_left = []
         self.rects_arrow_right = []
+        self.rects_colores = []
 
         colores_borde_pildoras = [(255, 60, 60), (40, 220, 100), (40, 160, 255), (255, 215, 0)]
         colores_fondo_badge = [(100, 20, 20), (20, 80, 40), (20, 50, 100), (100, 85, 20)]
@@ -125,7 +127,7 @@ class PantallaConfiguracion:
             rect_pill = pygame.Rect(rx, py, w_pill, h_pill)
             self.rects_nombres.append(rect_pill)
 
-            col_borde = colores_borde_pildoras[i]
+            col_borde = self.colores[i].obtener_rgb()
             col_bg_badge = colores_fondo_badge[i]
 
             # Tarjeta Glassmorphism
@@ -134,6 +136,11 @@ class PantallaConfiguracion:
                 color_bg=(col_bg_badge[0], col_bg_badge[1], col_bg_badge[2], 210),
                 color_borde=col_borde, radio=14
             )
+
+            r_col = pygame.Rect(rx + 38, py + 15, 22, 22)
+            self.rects_colores.append(r_col)
+            pygame.draw.circle(self.pantalla, col_borde, r_col.center, 10)
+            pygame.draw.circle(self.pantalla, (255, 255, 255), r_col.center, 10, width=2)
 
             # Flecha izquierda
             r_left = pygame.Rect(rx - 28, py + 12, 24, 28)
@@ -162,7 +169,7 @@ class PantallaConfiguracion:
                 nom_str += "|"
 
             txt_nom = self.fuente_pill.render(nom_str, True, (255, 255, 255))
-            self.pantalla.blit(txt_nom, (rx + 48, py + 16))
+            self.pantalla.blit(txt_nom, (rx + 70, py + 16))
 
         # Mensaje de Error
         if self.mensaje_error:
@@ -189,6 +196,17 @@ class PantallaConfiguracion:
         )
         self.btn_volver_inst.dibujar(self.pantalla)
 
+    def _cambiar_color_jugador(self, idx: int):
+        todos = Color.obtener_todos()
+        idx_actual = todos.index(self.colores[idx])
+        nuevo_color = todos[(idx_actual + 1) % len(todos)]
+
+        for otro_idx in range(self.cant_jugadores):
+            if otro_idx != idx and self.colores[otro_idx] == nuevo_color:
+                self.colores[otro_idx] = self.colores[idx]
+                break
+        self.colores[idx] = nuevo_color
+
     def manejar_evento(self, evento):
 
         if evento.type == pygame.MOUSEBUTTONDOWN and evento.button == 1:
@@ -203,6 +221,14 @@ class PantallaConfiguracion:
                 if self.cant_jugadores < 4:
                     self.cant_jugadores += 1
                     self.mensaje_error = ""
+
+            color_clickeado = False
+            for i, r_col in enumerate(self.rects_colores):
+                if r_col.collidepoint(pos):
+                    self._cambiar_color_jugador(i)
+                    self.mensaje_error = ""
+                    color_clickeado = True
+                    break
 
             # Clic en flechas de píldoras
             for i, r_l in enumerate(self.rects_arrow_left):
@@ -225,18 +251,19 @@ class PantallaConfiguracion:
                             self.nombres[i] = f"Jugador {i + 1}"
                     self.mensaje_error = ""
 
-            self.campo_activo = None
-            for idx, r_nom in enumerate(self.rects_nombres):
-                if r_nom.collidepoint(pos):
-                    self.campo_activo = idx
-                    break
+            if not color_clickeado:
+                self.campo_activo = None
+                for idx, r_nom in enumerate(self.rects_nombres):
+                    if r_nom.collidepoint(pos):
+                        self.campo_activo = idx
+                        break
 
             if hasattr(self, 'btn_iniciar_inst') and self.btn_iniciar_inst.es_cliqueado(evento):
                 if self._validar_configuracion():
                     self._crear_y_comenzar_partida()
 
             elif hasattr(self, 'btn_volver_inst') and self.btn_volver_inst.es_cliqueado(evento):
-                self.gestor.estado = "MENU"
+                self.gestor.cancelarSeleccionColores()
 
         elif evento.type == pygame.KEYDOWN and self.campo_activo is not None:
             idx = self.campo_activo
@@ -257,6 +284,11 @@ class PantallaConfiguracion:
 
         if len(nombres_activos) != len(set(nombres_activos)):
             self.mensaje_error = "No se permiten nombres repetidos."
+            return False
+
+        colores_activos = [self.colores[i] for i in range(self.cant_jugadores)]
+        if len(colores_activos) != len(set(colores_activos)):
+            self.mensaje_error = "Cada jugador debe tener un color diferente."
             return False
 
         self.mensaje_error = ""

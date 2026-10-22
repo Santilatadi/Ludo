@@ -315,27 +315,23 @@ class PantallaJuego:
         ox, oy = self.origen_x, self.origen_y
         cs = self.tam_celda
 
-        estilos_lbl = [
-            ((255, 235, 59), (255, 0, 0), "Nombre 1"),
-            ((255, 255, 255), (0, 200, 83), "Nombre 2"),
-            ((255, 255, 255), (0, 145, 234), "Nombre 3"),
-            ((255, 255, 255), (174, 234, 0), "Nombre 4")
-        ]
-
-        pos_etiquetas = [
-            (ox + 3 * cs, oy - 22),
-            (ox + 12 * cs, oy - 22),
-            (ox + 3 * cs, oy + 15 * cs + 22),
-            (ox + 12 * cs, oy + 15 * cs + 22)
-        ]
+        pos_por_color = {
+            Color.ROJO: (ox + 3 * cs, oy - 22),
+            Color.VERDE: (ox + 12 * cs, oy - 22),
+            Color.AZUL: (ox + 3 * cs, oy + 15 * cs + 22),
+            Color.AMARILLO: (ox + 12 * cs, oy + 15 * cs + 22)
+        }
 
         jug_act = partida.obtenerJugadorActual()
 
-        for i in range(min(4, len(partida.jugadores))):
-            cx, cy = pos_etiquetas[i]
-            col_bg, col_borde, nom_default = estilos_lbl[i]
-            jug = partida.jugadores[i]
-            nom = jug.nombre if i < len(partida.jugadores) else nom_default
+        for jug in partida.jugadores:
+            if jug.color not in pos_por_color:
+                continue
+
+            cx, cy = pos_por_color[jug.color]
+            col_bg = (255, 235, 59) if jug_act == jug else (255, 255, 255)
+            col_borde = jug.color.obtener_rgb()
+            nom = jug.nombre
 
             # Indicador de turno con escala pulsatil
             es_turno = (jug_act == jug)

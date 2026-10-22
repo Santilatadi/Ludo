@@ -86,7 +86,8 @@ class Partida:
         return len(colores) == len(set(colores))
 
     def cancelarSeleccionColores(self) -> None:
-        pass
+        self.coloresDisponibles = list(Color)
+        self.jugadores = []
 
     def configurarCantidadJugadores(self, cantidad: int) -> None:
         if 2 <= cantidad <= 4:

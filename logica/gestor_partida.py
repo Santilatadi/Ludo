@@ -33,9 +33,15 @@ class GestorPartida:
         if self.partidaActual:
             self.partidaActual.seleccionarColor(color)
 
+    def seleccionarColores(self) -> list:
+        if not self.partidaActual:
+            self.partidaActual = Partida()
+        return self.partidaActual.obtenerColoresDisponibles()
+
     def cancelarSeleccionColores(self) -> None:
         if self.partidaActual:
             self.partidaActual.cancelarSeleccionColores()
+        self.estado = "MENU"
 
     def configurarCantidadJugadores(self, cantidad: int) -> None:
         if not self.partidaActual:
