@@ -255,32 +255,29 @@ class PantallaJuego:
         ox, oy = self.origen_x, self.origen_y
         cs = self.tam_celda
 
-        # Ajuste exacto de colores de bordes y fondos de etiquetas según Figma:
-        # P1: Fondo Amarillo (#FFEB3B), Borde Rojo (#FF0000)
-        # P2: Fondo Blanco, Borde Verde (#00C853)
-        # P3: Fondo Blanco, Borde Azul (#0091EA)
-        # P4: Fondo Blanco, Borde Amarillo (#AEEA00)
-        estilos_lbl = [
-            ((255, 235, 59), (255, 0, 0), "Nombre 1"),
-            ((255, 255, 255), (0, 200, 83), "Nombre 2"),
-            ((255, 255, 255), (0, 145, 234), "Nombre 3"),
-            ((255, 255, 255), (174, 234, 0), "Nombre 4")
-        ]
+        # Posiciones de etiquetas según la base de cada color:
+        # Rojo: Superior Izquierda
+        # Verde: Superior Derecha
+        # Azul: Inferior Izquierda
+        # Amarillo: Inferior Derecha
+        pos_por_color = {
+            Color.ROJO: (ox + 3 * cs, oy - 22),
+            Color.VERDE: (ox + 12 * cs, oy - 22),
+            Color.AZUL: (ox + 3 * cs, oy + 15 * cs + 22),
+            Color.AMARILLO: (ox + 12 * cs, oy + 15 * cs + 22)
+        }
 
-        pos_etiquetas = [
-            (ox + 3 * cs, oy - 22),       # Top Left
-            (ox + 12 * cs, oy - 22),      # Top Right
-            (ox + 3 * cs, oy + 15 * cs + 22),   # Bottom Left
-            (ox + 12 * cs, oy + 15 * cs + 22)   # Bottom Right
-        ]
+        jugador_act = partida.obtenerJugadorActual()
 
-        for i in range(min(4, len(partida.jugadores))):
-            cx, cy = pos_etiquetas[i]
-            col_bg, col_borde, nom_default = estilos_lbl[i]
+        for jug in partida.jugadores:
+            if jug.color not in pos_por_color:
+                continue
 
-            nom = partida.jugadores[i].nombre if i < len(partida.jugadores) else nom_default
+            cx, cy = pos_por_color[jug.color]
+            col_borde = jug.color.obtener_rgb()
+            col_bg = (255, 235, 59) if jug == jugador_act else (255, 255, 255)
 
-            txt_surf = self._render_texto_delineado(nom, self.fuente_tag, (20, 20, 20), (255, 255, 255), 1)
+            txt_surf = self._render_texto_delineado(jug.nombre, self.fuente_tag, (20, 20, 20), (255, 255, 255), 1)
             bw, bh = max(110, txt_surf.get_width() + 30), 28
             rect_lbl = pygame.Rect(cx - bw // 2, cy - bh // 2, bw, bh)
 

@@ -36,14 +36,17 @@ class GestorPartida:
             self.partidaActual = Partida()
         return self.partidaActual.configurarCantidadJugadores(cantidad)
 
-    def seleccionarColores(self):
-        # Cambia al flujo de selección de colores.
-        pass
+    def seleccionarColores(self) -> list:
+        # Devuelve la lista de colores disponibles para la partida (CU-04 / RF-007).
+        if not self.partidaActual:
+            self.partidaActual = Partida()
+        return self.partidaActual.obtenerColoresDisponibles()
 
     def cancelarSeleccionColores(self):
-        # Cancela la selección de colores y regresa la partida a estado inicial.
+        # Cancela la selección de colores y regresa la partida a estado inicial (CU-04 / TC-004).
         if self.partidaActual:
             self.partidaActual.cancelarSeleccionColores()
+        self.estado = "MENU"
 
     def cancelarPartida(self):
         # Cancela la partida activa y regresa al Menú Principal.

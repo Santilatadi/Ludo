@@ -190,8 +190,9 @@ class Partida:
             self.mensaje_estado = f"¡Felicidades! {self.ganador.nombre} ha ganado el Ludo."
 
     def cancelarSeleccionColores(self):
-        # Reinicia la selección de colores.
-        pass
+        # Reinicia la selección de colores y jugadores (CU-04 / TC-004).
+        self.coloresDisponibles = Color.obtener_todos()
+        self.jugadores = []
 
     def cancelarPartida(self):
         # Cancela la partida activa y restablece el estado.
