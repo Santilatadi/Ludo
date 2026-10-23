@@ -1,117 +1,70 @@
 """
 Modulo pantalla_estadisticas.py
-Dibuja e interactúa con la Pantalla de Estadísticas.
-Muestra un panel dashboard con tarjetas de tiempo, turnos, tabla de posiciones y reconocimientos.
+Frame de "Estadísticas de la Partida" del Figma (CU-15): ventana con degradé azul y
+borde amarillo, tiempo y turnos jugados y una tabla con cada jugador.
 """
 
 import pygame
-from interfaz.efectos import dibujar_panel_glassmorphism, dibujar_texto_glow
-from interfaz.componentes import BotonModerno
+
+from interfaz import tema
 
 
 class PantallaEstadisticas:
 
-    def __init__(self, pantalla, gestor_partida):
+    def __init__(self, pantalla, game_manager, interfaz=None):
         self.pantalla = pantalla
-        self.gestor = gestor_partida
+        self.gestor = game_manager
+        self.interfaz = interfaz
+        self.resumen = ""
 
-        self.fuente_titulo = pygame.font.SysFont("Arial", 36, bold=True)
-        self.fuente_sub = pygame.font.SysFont("Arial", 22, bold=True)
-        self.fuente_tabla = pygame.font.SysFont("Arial", 18)
-        self.fuente_boton = pygame.font.SysFont("Arial", 22, bold=True)
+    def abrir(self):
+        # CU-15: el GameManager pide a la Partida que recopile las estadísticas
+        self.resumen = self.gestor.verEstadisticas()
+
+    def _caja(self, x, y, w, h, texto):
+        p = self.pantalla
+        r = tema.R(p, x, y, w, h)
+        pygame.draw.rect(p, (16, 36, 92), r, border_radius=tema.T(p, 10))
+        pygame.draw.rect(p, (60, 120, 230), r, width=tema.T(p, 3), border_radius=tema.T(p, 10))
+        tema.texto_figma(p, texto, 0, 0, 32, centrado_en=(x + w / 2, y + h / 2))
 
     def dibujar(self):
-        ancho, alto = self.pantalla.get_size()
-
-        # Capa translúcida sobre el juego
-        superficie_oscura = pygame.Surface((ancho, alto), pygame.SRCALPHA)
-        superficie_oscura.fill((5, 10, 25, 190))
-        self.pantalla.blit(superficie_oscura, (0, 0))
-
-        # Cuadro principal de datos Glassmorphism
-        rect_box = pygame.Rect(80, 80, ancho - 160, alto - 160)
-        dibujar_panel_glassmorphism(
-            self.pantalla, rect_box,
-            color_bg=(16, 35, 95, 240),
-            color_borde=(255, 215, 0, 220),
-            radio=20, grosor_borde=3
-        )
-
-        # Título
-        dibujar_texto_glow(
-            self.pantalla, "ESTADÍSTICAS DE LA PARTIDA", self.fuente_titulo,
-            ancho // 2, rect_box.y + 40,
-            color_texto=(255, 220, 40), color_resplandor=(0, 150, 255), centro=True
-        )
+        p = self.pantalla
+        tema.oscurecer(p)
+        tema.panel_figma(p, 86, 57, 1270, 800, tema.GRADIENTE, tema.AMARILLO_BORDE, 4, radio=50)
+        tema.texto_figma(p, "Estadísticas de la Partida", 0, 0, 80, contorno=(201, 192, 24), trazo=4,
+                         centrado_en=(666.5, 131))
+        self.btn_volver_inst = tema.cruz_figma(p, 1270, 78)
+        tema.linea_figma(p, 90, 197, 1260)
 
         partida = self.gestor.partidaActual
         if not partida:
-            txt_nodata = self.fuente_sub.render("No hay información de partida disponible.", True, (200, 200, 200))
-            self.pantalla.blit(txt_nodata, txt_nodata.get_rect(center=(ancho // 2, alto // 2)))
+            tema.texto_figma(p, "No hay estadísticas para mostrar.", 0, 0, 40, centrado_en=(721, 450))
             return
 
-        partida.recopilarEstadisticas()
-        segundos = getattr(partida, "tiempoTranscurrido", 0)
-        minutos = segundos // 60
-        seg_rest = segundos % 60
-        tiempo_str = f"{minutos:02d}:{seg_rest:02d}"
-        turnos_str = str(getattr(partida, "turnosJugados", 0))
-        ganador_str = partida.ganador.nombre if partida.ganador else "Ninguno"
+        segundos = partida.tiempoTranscurrido
+        self._caja(130, 225, 560, 64, f"Tiempo: {segundos // 60:02d}:{segundos % 60:02d}")
+        self._caja(750, 225, 560, 64, f"Turnos: {partida.turnosJugados}")
+        tema.linea_figma(p, 130, 315, 1180, (60, 120, 230), 3)
 
-        # Tarjetas de Información general (Tiempo y Turnos)
-        rect_t = pygame.Rect(rect_box.x + 40, rect_box.y + 85, (rect_box.width - 100) // 2, 45)
-        rect_turn = pygame.Rect(rect_box.x + 60 + (rect_box.width - 100) // 2, rect_box.y + 85, (rect_box.width - 100) // 2, 45)
+        columnas = ((150, "Jugador"), (620, "Movimientos"), (950, "Puntaje"))
+        for x, titulo in columnas:
+            tema.texto_figma(p, titulo, x, 335, 36)
+        for k, jugador in enumerate(partida.jugadores):
+            y = 405 + k * 70
+            fila = tema.R(p, 130, y - 8, 1180, 60)
+            pygame.draw.rect(p, (16, 36, 92), fila, border_radius=tema.T(p, 10))
+            tema.texto_figma(p, jugador.nombre, 150, y, 34, tema.COLOR_NOMBRE.get(jugador.color, tema.BLANCO))
+            tema.texto_figma(p, str(jugador.movimientos), 620, y, 34)
+            tema.texto_figma(p, f"{jugador.puntaje} pts", 950, y, 34, (254, 216, 66))
 
-        dibujar_panel_glassmorphism(self.pantalla, rect_t, color_bg=(25, 50, 120, 200), color_borde=(0, 200, 255, 150), radio=10)
-        dibujar_panel_glassmorphism(self.pantalla, rect_turn, color_bg=(25, 50, 120, 200), color_borde=(0, 200, 255, 150), radio=10)
-
-        txt_tiempo = self.fuente_sub.render(f"Tiempo: {tiempo_str}", True, (220, 240, 255))
-        txt_turnos = self.fuente_sub.render(f"Turnos: {turnos_str}", True, (220, 240, 255))
-        self.pantalla.blit(txt_tiempo, txt_tiempo.get_rect(center=rect_t.center))
-        self.pantalla.blit(txt_turnos, txt_turnos.get_rect(center=rect_turn.center))
-
-        # Encabezado de Tabla de Jugadores
-        py_tabla = rect_box.y + 150
-        pygame.draw.line(self.pantalla, (100, 140, 220), (rect_box.x + 30, py_tabla), (rect_box.right - 30, py_tabla), 2)
-
-        hdr_jug = self.fuente_sub.render("Jugador", True, (255, 255, 255))
-        hdr_mov = self.fuente_sub.render("Movimientos", True, (255, 255, 255))
-        hdr_pts = self.fuente_sub.render("Puntaje", True, (255, 255, 255))
-
-        self.pantalla.blit(hdr_jug, (rect_box.x + 50, py_tabla + 10))
-        self.pantalla.blit(hdr_mov, (rect_box.x + 280, py_tabla + 10))
-        self.pantalla.blit(hdr_pts, (rect_box.x + 480, py_tabla + 10))
-
-        # Filas de la tabla
-        pos_y_fila = py_tabla + 45
-        for j in partida.jugadores:
-            movs = getattr(j, "movimientos", 0)
-            pts = getattr(j, "puntaje", 0)
-            txt_n = self.fuente_tabla.render(j.nombre, True, (240, 240, 240))
-            txt_m = self.fuente_tabla.render(str(movs), True, (240, 240, 240))
-            txt_p = self.fuente_tabla.render(f"{pts} pts", True, (255, 220, 40))
-
-            self.pantalla.blit(txt_n, (rect_box.x + 50, pos_y_fila))
-            self.pantalla.blit(txt_m, (rect_box.x + 310, pos_y_fila))
-            self.pantalla.blit(txt_p, (rect_box.x + 490, pos_y_fila))
-            pos_y_fila += 35
-
-        # Ganador si aplica
-        if ganador_str != "Ninguno":
-            dibujar_texto_glow(
-                self.pantalla, f"LÍDER ACTUAL: {ganador_str}", self.fuente_sub,
-                rect_box.x + 40, rect_box.bottom - 45,
-                color_texto=(255, 215, 0), color_resplandor=(255, 100, 0)
-            )
-
-        # Botón Volver
-        self.btn_volver_inst = BotonModerno(
-            ((ancho - 180) // 2, alto - 70, 180, 48), "VOLVER",
-            color_base=(30, 100, 180), color_hover=(40, 140, 220),
-            fuente=self.fuente_boton, icono=""
-        )
-        self.btn_volver_inst.dibujar(self.pantalla)
+        if partida.ganador:
+            tema.texto_figma(p, f"Ganador: {partida.ganador.nombre}", 0, 0, 40, (254, 216, 66),
+                             centrado_en=(721, 800))
 
     def manejar_evento(self, evento):
-        if hasattr(self, 'btn_volver_inst') and self.btn_volver_inst.es_cliqueado(evento):
+        cerrar = (evento.type == pygame.MOUSEBUTTONDOWN and evento.button == 1 and hasattr(self, "btn_volver_inst")
+                  and self.btn_volver_inst.collidepoint(evento.pos))
+        if cerrar or (evento.type == pygame.KEYDOWN and evento.key == pygame.K_ESCAPE):
             self.gestor.volver()
+            self.interfaz.estado = self.interfaz.estado_anterior

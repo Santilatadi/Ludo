@@ -1,191 +1,131 @@
 """
 Modulo pantalla_pausa.py
-Dibuja e interactúa con el Menú de Pausa y la Ventana de Reinicio de Partida.
-Adaptado con contenedores glassmorphism, botones modernos interactivos y notificaciones toast.
+Frame "Pausa" del Figma (CU-10) y la ventana de confirmación del frame "Reiniciar",
+que también se usa para salir al menú (CU-12) y para guardar (CU-14).
 """
 
-import os
-import sys
-import pygame
 
-directorio_raiz = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-if directorio_raiz not in sys.path:
-    sys.path.insert(0, directorio_raiz)
+from interfaz import tema
+from interfaz.componentes import BotonFigma
 
-from interfaz.efectos import dibujar_panel_glassmorphism, dibujar_texto_glow
-from interfaz.componentes import BotonModerno
+# (atributo, texto, color de relleno, y) — botones 695x95 del frame "Pausa"
+BOTONES = [("btn_continuar_inst", "Continuar", (66, 103, 254), 214),
+           ("btn_reiniciar_inst", "Reiniciar Partida", (191, 106, 2), 322),
+           ("btn_reglas_inst", "Reglas", (66, 103, 254), 430),
+           ("btn_stats_inst", "Estadísticas", (66, 103, 254), 538),
+           ("btn_guardar_inst", "Guardar Partida", (9, 201, 15), 646),
+           ("btn_menu_inst", "Volver al Menú", (255, 4, 4), 754)]
+
+TEXTOS_CONFIRMACION = {
+    "REINICIAR": ("Reiniciar", "Esta acción eliminará todo el\nprogreso de esta partida."),
+    "SALIR": ("Volver al Menú", "Esta acción descartará el\nprogreso no guardado."),
+    "GUARDAR": ("Guardar Partida", "Se guardará la partida y\nvolverás al menú principal."),
+}
 
 
 class PantallaPausa:
 
-    def __init__(self, pantalla, gestor_partida, persistencia):
+    def __init__(self, pantalla, game_manager, interfaz=None):
         self.pantalla = pantalla
-        self.gestor = gestor_partida
-        self.persistencia = persistencia
-
-        ruta_fuente = "assets/font.ttf"
-        if os.path.exists(ruta_fuente):
-            self.fuente_titulo = pygame.font.Font(ruta_fuente, 42)
-            self.fuente_sub = pygame.font.Font(ruta_fuente, 18)
-            self.fuente_boton = pygame.font.Font(ruta_fuente, 22)
-        else:
-            self.fuente_titulo = pygame.font.SysFont("Impact", 40, bold=True)
-            self.fuente_sub = pygame.font.SysFont("Arial", 18, bold=True)
-            self.fuente_boton = pygame.font.SysFont("Arial", 22, bold=True)
-
-        self.confirmando_accion = None  # None, "REINICIAR" o "SALIR"
+        self.gestor = game_manager
+        self.interfaz = interfaz
+        self.confirmando_accion = None  # None, "REINICIAR", "SALIR" o "GUARDAR"
         self.mensaje_toast = ""
 
     def dibujar(self):
-        ancho, alto = self.pantalla.get_size()
-
-        # Capa translúcida sobre la pantalla de juego
-        superficie_oscura = pygame.Surface((ancho, alto), pygame.SRCALPHA)
-        superficie_oscura.fill((5, 10, 25, 180))
-        self.pantalla.blit(superficie_oscura, (0, 0))
-
-        # Ventana Modal Glassmorphism
-        w_box, h_box = min(460, ancho - 40), min(500, alto - 40)
-        rect_box = pygame.Rect((ancho - w_box) // 2, (alto - h_box) // 2, w_box, h_box)
-
-        dibujar_panel_glassmorphism(
-            self.pantalla, rect_box,
-            color_bg=(16, 35, 95, 235),
-            color_borde=(255, 215, 0, 220),
-            radio=20, grosor_borde=3
-        )
-
+        p = self.pantalla
+        tema.oscurecer(p)
         if self.confirmando_accion:
-            self._dibujar_modal_confirmacion(rect_box)
+            self._dibujar_modal_confirmacion()
             return
 
-        # Header "PAUSA"
-        dibujar_texto_glow(
-            self.pantalla, "PAUSA", self.fuente_titulo,
-            ancho // 2, rect_box.y + 45,
-            color_texto=(255, 255, 255), color_resplandor=(255, 215, 0), centro=True
-        )
-
-        # Línea divisoria roja horizontal
-        y_div = rect_box.y + 85
-        pygame.draw.line(self.pantalla, (220, 20, 60), (rect_box.x + 20, y_div), (rect_box.right - 20, y_div), 2)
-
-        # Botones apilados
-        pos_y_base = y_div + 15
-        bw, bh = 280, 44
-        bx = (ancho - bw) // 2
-
-        self.btn_continuar_inst = BotonModerno(
-            (bx, pos_y_base, bw, bh), "Continuar",
-            color_base=(0, 85, 255), color_hover=(35, 115, 255),
-            fuente=self.fuente_boton, icono=""
-        )
-        self.btn_reiniciar_inst = BotonModerno(
-            (bx, pos_y_base + 52, bw, bh), "Reiniciar Partida",
-            color_base=(210, 110, 20), color_hover=(235, 135, 35),
-            fuente=self.fuente_boton, icono=""
-        )
-        self.btn_reglas_inst = BotonModerno(
-            (bx, pos_y_base + 104, bw, bh), "Reglas",
-            color_base=(0, 85, 255), color_hover=(35, 115, 255),
-            fuente=self.fuente_boton, icono=""
-        )
-        self.btn_stats_inst = BotonModerno(
-            (bx, pos_y_base + 156, bw, bh), "Estadísticas",
-            color_base=(0, 85, 255), color_hover=(35, 115, 255),
-            fuente=self.fuente_boton, icono=""
-        )
-        self.btn_guardar_inst = BotonModerno(
-            (bx, pos_y_base + 208, bw, bh), "Guardar Partida",
-            color_base=(40, 160, 80), color_hover=(60, 190, 100),
-            fuente=self.fuente_boton, icono=""
-        )
-        self.btn_menu_inst = BotonModerno(
-            (bx, pos_y_base + 260, bw, bh), "Volver al Menú",
-            color_base=(200, 40, 50), color_hover=(230, 60, 70),
-            fuente=self.fuente_boton, icono=""
-        )
-
-        self.btn_continuar_inst.dibujar(self.pantalla)
-        self.btn_reiniciar_inst.dibujar(self.pantalla)
-        self.btn_reglas_inst.dibujar(self.pantalla)
-        self.btn_stats_inst.dibujar(self.pantalla)
-        self.btn_guardar_inst.dibujar(self.pantalla)
-        self.btn_menu_inst.dibujar(self.pantalla)
+        tema.panel_figma(p, 301, 57, 800, 859, tema.GRADIENTE, tema.AMARILLO_BORDE, 4, radio=50)
+        tema.texto_figma(p, "Pausa", 0, 0, 96, contorno=(201, 192, 24), trazo=4, centrado_en=(719.5, 132))
+        tema.linea_figma(p, 317, 199, 765)
+        for atributo, texto, relleno, y in BOTONES:
+            x = 353 if atributo in ("btn_reiniciar_inst", "btn_menu_inst") else 350
+            boton = BotonFigma(p, (x, y, 695, 95), texto, relleno, tema.AMARILLO, 4, radio=40, tam_texto=64,
+                               contorno_texto=tema.AZUL)
+            setattr(self, atributo, boton)
+            boton.dibujar(p)
 
         if self.mensaje_toast:
-            dibujar_texto_glow(
-                self.pantalla, self.mensaje_toast, self.fuente_sub,
-                ancho // 2, rect_box.bottom - 15,
-                color_texto=(100, 255, 100), color_resplandor=(0, 200, 0), centro=True
-            )
+            # CU-14 A 4.a: el guardado falló
+            tema.texto_figma(p, self.mensaje_toast, 0, 0, 28, (255, 120, 120), tema.NEGRO, 4,
+                             centrado_en=(701, 890))
 
+    def _dibujar_modal_confirmacion(self):
+        p = self.pantalla
+        titulo, mensaje = TEXTOS_CONFIRMACION.get(self.confirmando_accion, TEXTOS_CONFIRMACION["SALIR"])
+        tema.panel_figma(p, 92, 166, 1256, 627, tema.GRADIENTE, tema.ROJO_BORDE, 4)
+        tema.texto_figma(p, titulo, 0, 0, 96, (235, 229, 35), (197, 18, 18), 4, centrado_en=(719.5, 229))
+        tema.linea_figma(p, 92, 304, 1256)
+        for k, linea in enumerate(mensaje.split("\n")):
+            tema.texto_figma(p, linea, 0, 0, 64, centrado_en=(693.5, 351 + k * 70))
+        tema.texto_figma(p, "¿Está seguro de continuar?", 0, 0, 64, (254, 216, 66), centrado_en=(699, 515))
 
-    def _dibujar_modal_confirmacion(self, rect_box):
-        ancho, alto = self.pantalla.get_size()
-
-        titulo_str = "REINICIAR" if self.confirmando_accion == "REINICIAR" else "SALIR AL MENÚ"
-        dibujar_texto_glow(
-            self.pantalla, titulo_str, self.fuente_titulo,
-            ancho // 2, rect_box.y + 45,
-            color_texto=(255, 220, 0), color_resplandor=(255, 50, 50), centro=True
-        )
-
-        y_div = rect_box.y + 85
-        pygame.draw.line(self.pantalla, (220, 20, 60), (rect_box.x + 20, y_div), (rect_box.right - 20, y_div), 2)
-
-        txt1 = self.fuente_sub.render("Esta acción descartará todo el", True, (240, 240, 255))
-        txt1_2 = self.fuente_sub.render("progreso no guardado de esta partida.", True, (240, 240, 255))
-        txt2 = self.fuente_sub.render("¿Estás seguro de continuar?", True, (255, 220, 100))
-
-        self.pantalla.blit(txt1, txt1.get_rect(center=(ancho // 2, rect_box.y + 130)))
-        self.pantalla.blit(txt1_2, txt1_2.get_rect(center=(ancho // 2, rect_box.y + 155)))
-        self.pantalla.blit(txt2, txt2.get_rect(center=(ancho // 2, rect_box.y + 200)))
-
-        bw, bh = 150, 48
-        self.btn_conf_no_inst = BotonModerno(
-            (ancho // 2 - 165, rect_box.y + 270, bw, bh), "CANCELAR",
-            color_base=(80, 90, 110), fuente=self.fuente_boton
-        )
-        self.btn_conf_si_inst = BotonModerno(
-            (ancho // 2 + 15, rect_box.y + 270, bw, bh), "CONFIRMAR",
-            color_base=(220, 40, 50), fuente=self.fuente_boton
-        )
-
-        self.btn_conf_no_inst.dibujar(self.pantalla)
-        self.btn_conf_si_inst.dibujar(self.pantalla)
+        self.btn_conf_no_inst = BotonFigma(p, (165, 609, 470, 128), "CANCELAR", tema.GRIS, (255, 4, 4), 4,
+                                           tam_texto=64, contorno_texto=(66, 133, 244))
+        self.btn_conf_si_inst = BotonFigma(p, (776, 609, 512, 128), "CONFIRMAR", (223, 14, 14), (66, 133, 244), 4,
+                                           tam_texto=64)
+        self.btn_conf_no_inst.dibujar(p)
+        self.btn_conf_si_inst.dibujar(p)
 
     def manejar_evento(self, evento):
 
         if self.confirmando_accion:
             if hasattr(self, 'btn_conf_si_inst') and self.btn_conf_si_inst.es_cliqueado(evento):
-                if self.confirmando_accion == "REINICIAR":
-                    self.confirmando_accion = None
+                accion, self.confirmando_accion = self.confirmando_accion, None
+                if accion == "REINICIAR":
+                    # CU-11: se descarta la partida y se vuelve a configurar
                     self.gestor.confirmarReinicio()
-                elif self.confirmando_accion == "SALIR":
-                    self.confirmando_accion = None
+                    self.interfaz.pantalla_config.reiniciar_formulario()
+                    self.interfaz.ir_a("CONFIGURACION")
+                elif accion == "SALIR":
+                    # CU-12: se descartan los datos y se vuelve al menú
                     self.gestor.confirmarSalida()
+                    self.interfaz.ir_a("MENU")
+                elif accion == "GUARDAR":
+                    # CU-14: se guarda y se vuelve al menú; si falla, se informa (A 4.a)
+                    exito, msg = self.gestor.confirmarGuardado()
+                    self.mensaje_toast = "" if exito else msg
+                    if exito:
+                        self.interfaz.ir_a("MENU")
 
             elif hasattr(self, 'btn_conf_no_inst') and self.btn_conf_no_inst.es_cliqueado(evento):
+                if self.confirmando_accion == "REINICIAR":
+                    self.gestor.cancelarReinicio()
+                elif self.confirmando_accion == "SALIR":
+                    self.gestor.cancelarSalida()
+                elif self.confirmando_accion == "GUARDAR":
+                    self.gestor.cancelarGuardado()
                 self.confirmando_accion = None
             return
 
         if hasattr(self, 'btn_continuar_inst') and self.btn_continuar_inst.es_cliqueado(evento):
             self.gestor.reanudarPartida()
+            self.interfaz.ir_a("JUEGO")
 
         elif hasattr(self, 'btn_reiniciar_inst') and self.btn_reiniciar_inst.es_cliqueado(evento):
             self.confirmando_accion = "REINICIAR"
 
         elif hasattr(self, 'btn_reglas_inst') and self.btn_reglas_inst.es_cliqueado(evento):
-            self.gestor.consultarReglas()
+            self.interfaz.pantalla_reglas.abrir()
+            self.interfaz.ir_a("REGLAS")
 
         elif hasattr(self, 'btn_stats_inst') and self.btn_stats_inst.es_cliqueado(evento):
-            self.gestor.verEstadisticas()
+            self.interfaz.pantalla_stats.abrir()
+            self.interfaz.ir_a("ESTADISTICAS")
 
         elif hasattr(self, 'btn_menu_inst') and self.btn_menu_inst.es_cliqueado(evento):
-            self.confirmando_accion = "SALIR"
+            # CU-12: solo se pide confirmación si hay una partida activa (A 3.b)
+            if self.gestor.volverAlMenuPrinicipal():
+                self.confirmando_accion = "SALIR"
+            else:
+                self.interfaz.ir_a("MENU")
 
         elif hasattr(self, 'btn_guardar_inst') and self.btn_guardar_inst.es_cliqueado(evento):
+            # CU-14: guardar pide confirmación y, si sale bien, vuelve al menú
             if self.gestor.partidaActual:
-                self.gestor.guardarPartida()
-                self.mensaje_toast = "¡Partida guardada con éxito!"
+                self.mensaje_toast = ""
+                self.confirmando_accion = "GUARDAR"

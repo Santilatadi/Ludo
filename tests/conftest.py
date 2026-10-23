@@ -22,32 +22,47 @@ from modelos.jugador import Jugador
 from modelos.partida import Partida
 from modelos.tablero import Tablero
 
+# Tablero sobre el que ubicar() acomoda las fichas (lo fijan las fixtures).
+_tablero_activo = None
+
 
 # ---------------------------------------------------------------------------
 # Funciones auxiliares
 # ---------------------------------------------------------------------------
 
-def ubicar(ficha, posicion):
+def ubicar(ficha, posicion, tablero=None):
     """Pone una ficha en una posición de su recorrido sin pasar por las reglas.
 
     0 = base, 1 a 51 = circuito, 52 a 57 = pasillo final, 58 = meta.
-    Sirve para armar a mano la situación del tablero que queremos probar.
+    Si hay un tablero activo, la ficha queda también en su casillero.
     """
     ficha.posicion = posicion
     ficha.enBase = posicion == 0
     ficha.enMeta = posicion == 58
+    tablero = tablero or _tablero_activo
+    if tablero is not None:
+        for casillero in tablero.Casilleros:
+            if ficha in casillero:
+                casillero.remove(ficha)
+        if 1 <= posicion <= 51:
+            tablero.Casilleros[casilla_global(ficha.color, posicion)].append(ficha)
     return ficha
+
+
+def salida(color):
+    """Casillero de salida (posición 1) de un color."""
+    return Tablero().inicio[list(Color).index(color)]
 
 
 def casilla_global(color, posicion):
     """Casilla del circuito (0 a 51) donde cae una ficha de ese color en esa posición."""
-    return (Tablero.SALIDA_COLOR[color] + posicion - 1) % 52
+    return (salida(color) + posicion - 1) % 52
 
 
 def posicion_para_casilla(color, casilla):
     """Inverso de casilla_global: qué posición tiene que tener una ficha de ese
     color para estar parada en esa casilla del circuito."""
-    return (casilla - Tablero.SALIDA_COLOR[color]) % 52 + 1
+    return (casilla - salida(color)) % 52 + 1
 
 
 # ---------------------------------------------------------------------------
@@ -65,29 +80,34 @@ def azul():
 
 
 @pytest.fixture
-def tablero(rojo, azul):
-    """Tablero con dos jugadores (rojo y azul), todas las fichas en la base."""
+def tablero():
+    """Tablero vacío (todas las fichas en la base); ubicar() pone fichas en él."""
+    global _tablero_activo
     t = Tablero()
-    t.Actualizar([rojo, azul])
-    return t
+    t.inicializar()
+    _tablero_activo = t
+    yield t
+    _tablero_activo = None
 
 
 @pytest.fixture
 def crear_partida():
-    """Fábrica de partidas iniciadas.
+    """Fábrica de partidas iniciadas (DS N5: Partida(datosConfiguracion) e iniciar()).
 
-    Uso: crear_partida(2) o crear_partida(4, bots=True).
+    Uso: crear_partida(2) o crear_partida(4, bots=True). Los bots se llaman "Bot n".
     """
     def _crear(cantidad=2, bots=False):
-        partida = Partida()
-        partida.configurarCantidadJugadores(cantidad)
-        colores = Color.obtener_todos()[:cantidad]
-        partida.jugadores = [
-            Jugador(f"J{i + 1}", color, es_bot=bots) for i, color in enumerate(colores)
-        ]
+        global _tablero_activo
+        datos = {"cantidadJugadores": cantidad,
+                 "jugadores": [{"nombre": f"Bot {i + 1}" if bots else f"J{i + 1}", "color": color}
+                               for i, color in enumerate(list(Color)[:cantidad])]}
+        partida = Partida(datos)
+        assert partida.validarConfiguracion() == ""
         partida.iniciar()
+        _tablero_activo = partida.tablero
         return partida
-    return _crear
+    yield _crear
+    _tablero_activo = None
 
 
 @pytest.fixture
@@ -108,3 +128,19 @@ def dado(monkeypatch):
 
         monkeypatch.setattr("modelos.partida.random.randint", falso_randint)
     return _fijar
+
+
+@pytest.fixture(autouse=True)
+def guardado_en_carpeta_temporal(monkeypatch, tmp_path):
+    """El GameManager guarda la partida al iniciarla (CU-04): en las pruebas
+    ese guardado va a una carpeta temporal para no tocar partidas_guardadas/."""
+    from persistencia.persistencia_de_datos import PersistenciaDeDatos
+    import logica.game_manager as game_manager
+
+    ruta = str(tmp_path / "partidas_guardadas" / "partidas.json")
+
+    class PersistenciaTemporal(PersistenciaDeDatos):
+        def __init__(self, rutaArchivo=None):
+            super().__init__(rutaArchivo or ruta)
+
+    monkeypatch.setattr(game_manager, "PersistenciaDeDatos", PersistenciaTemporal)

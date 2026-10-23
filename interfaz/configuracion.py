@@ -1,7 +1,8 @@
 """
 Modulo configuracion.py
 Dibuja e interactúa con la Pantalla de Configuración de Nueva Partida.
-Adaptado con tarjetas visuales glassmorphism, avatar de bots/jugadores y botones sonoros interactivos.
+Sigue el frame "Configuracion Nueva Partida" del Figma: cantidad de jugadores (CU-02),
+nombres y tipo de cada jugador (CU-03) y elección de color con las flechas (CU-04).
 """
 
 import os
@@ -13,257 +14,207 @@ if directorio_raiz not in sys.path:
     sys.path.insert(0, directorio_raiz)
 
 from modelos.color import Color
-from modelos.jugador import Jugador
-from interfaz.efectos import SistemaParticulas, dibujar_panel_glassmorphism, dibujar_texto_glow
-from interfaz.componentes import BotonModerno
+from interfaz import tema
+from interfaz.componentes import BotonModerno, BotonFigma
 
 
 class PantallaConfiguracion:
 
-    def __init__(self, pantalla, gestor_partida):
+    def __init__(self, pantalla, game_manager, interfaz=None):
         self.pantalla = pantalla
-        self.gestor = gestor_partida
+        self.gestor = game_manager
+        self.interfaz = interfaz
+        self.reiniciar_formulario()
 
-        ruta_fuente = "assets/font.ttf"
-        if os.path.exists(ruta_fuente):
-            self.fuente_titulo = pygame.font.Font(ruta_fuente, 42)
-            self.fuente_sub = pygame.font.Font(ruta_fuente, 20)
-            self.fuente_label = pygame.font.Font(ruta_fuente, 18)
-            self.fuente_boton = pygame.font.Font(ruta_fuente, 24)
-            self.fuente_pill = pygame.font.Font(ruta_fuente, 16)
-        else:
-            self.fuente_titulo = pygame.font.SysFont("Impact", 40, bold=True)
-            self.fuente_sub = pygame.font.SysFont("Arial", 20, bold=True)
-            self.fuente_label = pygame.font.SysFont("Arial", 18, bold=True)
-            self.fuente_boton = pygame.font.SysFont("Arial", 24, bold=True)
-            self.fuente_pill = pygame.font.SysFont("Arial", 16, bold=True)
-
+    def reiniciar_formulario(self):
+        # Valores iniciales de la pantalla (nueva partida o reinicio, CU-11)
         self.cant_jugadores = 2
         self.es_bot_lista = [False, True, True, True]
-        self.nombres = ["Jugador 1", "Jugador 2", "Jugador 3", "Jugador 4"]
-        self.colores = [Color.ROJO, Color.AZUL, Color.VERDE, Color.AMARILLO]
-        self.rects_colores = []
+        self.nombres = ["Jugador 1", "Bot 2", "Bot 3", "Bot 4"]
+        self.colores = [Color.ROJO, Color.VERDE, Color.AZUL, Color.AMARILLO]   # orden del Figma
         self.campo_activo = None
         self.mensaje_error = ""
 
         self.ticks = 0
 
+    def _sincronizar_partida(self):
+        # CU-01 y CU-02: la partida en configuración del GameManager tiene la cantidad de
+        # jugadores y el color de cada uno que muestra la pantalla.
+        partida = self.gestor.partidaActual
+        if partida is None or partida.estado != "CONFIGURACION":
+            self.gestor.iniciarPartida()
+            partida = self.gestor.partidaActual
+        if partida.numeroJugadores() == self.cant_jugadores:
+            return
+        self.gestor.configurarCantidadJugadores(self.cant_jugadores)
+        for i in range(self.cant_jugadores):
+            exito, _ = self.gestor.seleccionarColor(self.colores[i], i)
+            if not exito:
+                self.colores[i] = self.gestor.seleccionarColores()[0]
+                self.gestor.seleccionarColor(self.colores[i], i)
+
     def dibujar(self):
+        # Frame "Configuracion Nueva Partida" del Figma
         self.ticks += 1
-        ancho, alto = self.pantalla.get_size()
+        self._sincronizar_partida()
+        p = self.pantalla
+        pos_m = pygame.mouse.get_pos()
 
-        # Canvas de fondo violeta según diseño en Figma
-        self.pantalla.fill((46, 21, 90))
+        p.fill(tema.FONDO)
+        tema.panel_figma(p, 111, 88, 1220, 805, tema.GRADIENTE, tema.ROJO_BORDE, 4)
+        tema.texto_figma(p, "NUEVA PARTIDA", 0, 0, 96, contorno=(255, 251, 0), trazo=4, centrado_en=(721, 172))
+        barra = tema.R(p, 282, 217, 878, 16)
+        pygame.draw.rect(p, tema.GRIS, barra, border_radius=barra.height // 2)
+        pygame.draw.rect(p, tema.NEGRO, barra, width=tema.T(p, 4), border_radius=barra.height // 2)
 
-        # Ventana modal Glassmorphism azul marino con borde dorado resplandeciente
-        w_win, h_win = min(720, ancho - 40), min(540, alto - 40)
-        rect_win = pygame.Rect((ancho - w_win) // 2, (alto - h_win) // 2, w_win, h_win)
+        # CU-02: cantidad de jugadores ("-" y "+" rojos a los lados del número)
+        tema.texto_figma(p, "Cantidad", 183, 312, 36)
+        tema.texto_figma(p, "Jugadores", 183, 350, 36)
+        self.btn_menos_inst = BotonModerno(tema.R(p, 438, 302, 52, 70), "-")
+        self.btn_mas_inst = BotonModerno(tema.R(p, 615, 302, 56, 70), "+")
+        for boton, cx in ((self.btn_menos_inst, 463.5), (self.btn_mas_inst, 642.5)):
+            claro = boton.rect_base.collidepoint(pos_m)
+            tema.texto_figma(p, boton.texto, 0, 0, 64, (255, 90, 90) if claro else tema.ROJO_TEXTO, tema.NEGRO, 2,
+                             centrado_en=(cx, 337))
+        cantidad = tema.R(p, 505, 306, 94, 66)
+        pygame.draw.rect(p, tema.GRIS, cantidad, border_radius=cantidad.height // 2)
+        pygame.draw.rect(p, tema.NEGRO, cantidad, width=tema.T(p, 4), border_radius=cantidad.height // 2)
+        tema.texto_figma(p, str(self.cant_jugadores), 0, 0, 64, tema.ROJO_TEXTO, tema.NEGRO, 2, centrado_en=(552, 339))
 
-        dibujar_panel_glassmorphism(
-            self.pantalla, rect_win,
-            color_bg=(16, 35, 95, 230),
-            color_borde=(255, 215, 0, 220),
-            radio=20, grosor_borde=3
-        )
-
-        # Encabezado "NUEVA PARTIDA"
-        dibujar_texto_glow(
-            self.pantalla, "NUEVA PARTIDA", self.fuente_titulo,
-            ancho // 2, rect_win.y + 40,
-            color_texto=(255, 255, 255), color_resplandor=(255, 215, 0), centro=True
-        )
-
-        # 1. Selector de Cantidad de Jugadores
-        txt_c1 = self.fuente_sub.render("Cantidad de Jugadores:", True, (220, 240, 255))
-        self.pantalla.blit(txt_c1, (rect_win.x + 45, rect_win.y + 95))
-
-        # Botón -
-        self.btn_menos_inst = BotonModerno(
-            (rect_win.x + 310, rect_win.y + 88, 36, 36), "-",
-            color_base=(220, 40, 50), color_hover=(250, 60, 70),
-            fuente=self.fuente_sub
-        )
-        self.btn_menos_inst.dibujar(self.pantalla)
-
-        # Círculo central indicador de cantidad
-        rect_circ_cant = pygame.Rect(rect_win.x + 360, rect_win.y + 82, 48, 48)
-        pygame.draw.circle(self.pantalla, (255, 215, 0), rect_circ_cant.center, 24)
-        pygame.draw.circle(self.pantalla, (20, 20, 20), rect_circ_cant.center, 24, width=2)
-        txt_c = self.fuente_sub.render(str(self.cant_jugadores), True, (20, 20, 20))
-        self.pantalla.blit(txt_c, txt_c.get_rect(center=rect_circ_cant.center))
-
-        # Botón +
-        self.btn_mas_inst = BotonModerno(
-            (rect_win.x + 420, rect_win.y + 88, 36, 36), "+",
-            color_base=(220, 40, 50), color_hover=(250, 60, 70),
-            fuente=self.fuente_sub
-        )
-        self.btn_mas_inst.dibujar(self.pantalla)
-
-        # 2. Configuración de Jugadores (Cuadrícula 2x2 de Píldoras/Tarjetas)
+        # CU-03 y CU-04: un renglón por jugador con su nombre; el borde es su color
+        tema.texto_figma(p, "Jugadores", 183, 429, 48)
         self.rects_nombres = []
         self.rects_arrow_left = []
         self.rects_arrow_right = []
-        self.rects_colores = []
+        self.rects_tipo = []
+        posiciones = [(300, 523), (824, 523), (300, 645), (824, 645)]
+        for i in range(self.cant_jugadores):
+            fx, fy = posiciones[i]
+            col = tema.COLOR_JUGADOR.get(self.colores[i], tema.BLANCO)
+            pildora = tema.R(p, fx, fy, 327, 61)
+            self.rects_nombres.append(pildora)
+            pygame.draw.rect(p, tema.BLANCO, pildora, border_radius=pildora.height // 2)
+            pygame.draw.rect(p, col, pildora, width=tema.T(p, 5), border_radius=pildora.height // 2)
 
-        colores_borde_pildoras = [(255, 60, 60), (40, 220, 100), (40, 160, 255), (255, 215, 0)]
-        colores_fondo_badge = [(100, 20, 20), (20, 80, 40), (20, 50, 100), (100, 85, 20)]
+            # Flechas grises: cambian el color del jugador (CU-04)
+            izq, der = tema.R(p, fx - 33, fy + 15, 24, 30), tema.R(p, fx + 336, fy + 15, 24, 30)
+            self.rects_arrow_left.append(izq)
+            self.rects_arrow_right.append(der)
+            for r, derecha in ((izq, False), (der, True)):
+                tema.flecha(p, r, derecha, (255, 251, 120) if r.collidepoint(pos_m) else tema.GRIS, tema.NEGRO,
+                            tema.T(p, 4))
 
-        w_pill, h_pill = 240, 52
-        offsets_grid = [
-            (rect_win.x + 80, rect_win.y + 165),   # P1 Top Left
-            (rect_win.x + 380, rect_win.y + 165),  # P2 Top Right
-            (rect_win.x + 80, rect_win.y + 245),   # P3 Bottom Left
-            (rect_win.x + 380, rect_win.y + 245)   # P4 Bottom Right
-        ]
+            # Nombre sobre la línea; "BOT" a la izquierda si lo controla la consola (CU-03 C)
+            nombre = self.nombres[i] + ("|" if self.campo_activo == i and self.ticks % 60 < 30 else "")
+            tema.texto_figma(p, nombre, 0, 0, 30, (30, 30, 40), None, centrado_en=(fx + 166, fy + 30))
+            pygame.draw.line(p, tema.NEGRO, tema.P(p, fx + 30, fy + 53), tema.P(p, fx + 301, fy + 53), tema.T(p, 4))
+            tipo = tema.R(p, fx + 12, fy + 14, 52, 30)
+            self.rects_tipo.append(tipo)
+            if self.es_bot_lista[i] or tipo.collidepoint(pos_m):
+                pygame.draw.rect(p, (60, 60, 80) if self.es_bot_lista[i] else tema.GRIS, tipo,
+                                 border_radius=tipo.height // 2)
+                tema.texto(p, "BOT", tema.T(p, 20), tipo.center,
+                           color=tema.BLANCO if self.es_bot_lista[i] else (90, 90, 110))
 
-        pos_m = pygame.mouse.get_pos()
-
-        for i in range(4):
-            if i >= self.cant_jugadores:
-                continue
-
-            rx, py = offsets_grid[i]
-            rect_pill = pygame.Rect(rx, py, w_pill, h_pill)
-            self.rects_nombres.append(rect_pill)
-
-            col_borde = self.colores[i].obtener_rgb()
-            col_bg_badge = colores_fondo_badge[i]
-
-            # Tarjeta Glassmorphism
-            dibujar_panel_glassmorphism(
-                self.pantalla, rect_pill,
-                color_bg=(col_bg_badge[0], col_bg_badge[1], col_bg_badge[2], 210),
-                color_borde=col_borde, radio=14
-            )
-
-            r_col = pygame.Rect(rx + 38, py + 15, 22, 22)
-            self.rects_colores.append(r_col)
-            pygame.draw.circle(self.pantalla, col_borde, r_col.center, 10)
-            pygame.draw.circle(self.pantalla, (255, 255, 255), r_col.center, 10, width=2)
-
-            # Flecha izquierda
-            r_left = pygame.Rect(rx - 28, py + 12, 24, 28)
-            self.rects_arrow_left.append(r_left)
-            col_fl = (255, 215, 0) if r_left.collidepoint(pos_m) else (200, 200, 200)
-            pygame.draw.polygon(self.pantalla, col_fl, [(r_left.right, r_left.y), (r_left.x, r_left.centery), (r_left.right, r_left.bottom)])
-
-            # Flecha derecha
-            r_right = pygame.Rect(rx + w_pill + 4, py + 12, 24, 28)
-            self.rects_arrow_right.append(r_right)
-            col_fr = (255, 215, 0) if r_right.collidepoint(pos_m) else (200, 200, 200)
-            pygame.draw.polygon(self.pantalla, col_fr, [(r_right.x, r_right.y), (r_right.right, r_right.centery), (r_right.x, r_right.bottom)])
-
-            # Icono Avatar (Robot vs Persona)
-            icono_tipo = "🤖" if self.es_bot_lista[i] else "👤"
-            txt_ico = self.fuente_sub.render(icono_tipo, True, (255, 255, 255))
-            self.pantalla.blit(txt_ico, (rx + 12, py + 14))
-
-            # Nombre dentro de la tarjeta
-            nom_str = self.nombres[i]
-            if self.es_bot_lista[i]:
-                nom_str += " (Bot)"
-
-            # Si el campo está activo para escribir, mostrar indicador |
-            if self.campo_activo == i:
-                nom_str += "|"
-
-            txt_nom = self.fuente_pill.render(nom_str, True, (255, 255, 255))
-            self.pantalla.blit(txt_nom, (rx + 70, py + 16))
-
-        # Mensaje de Error
         if self.mensaje_error:
-            dibujar_texto_glow(
-                self.pantalla, self.mensaje_error, self.fuente_label,
-                ancho // 2, rect_win.bottom - 105,
-                color_texto=(255, 100, 100), color_resplandor=(255, 0, 0), centro=True
-            )
+            tema.texto_figma(p, self.mensaje_error, 0, 0, 28, (255, 230, 230), tema.ROJO_BORDE, 4,
+                             centrado_en=(721, 268))
 
-        # Botón INICIAR
-        bw_btn, bh_btn = 220, 52
-        self.btn_iniciar_inst = BotonModerno(
-            ((ancho - bw_btn) // 2, rect_win.bottom - 75, bw_btn, bh_btn),
-            "INICIAR",
-            color_base=(220, 30, 40), color_hover=(250, 50, 60),
-            color_borde=(255, 230, 0), fuente=self.fuente_boton, icono="⚔️"
-        )
-        self.btn_iniciar_inst.dibujar(self.pantalla)
+        self.btn_iniciar_inst = BotonFigma(p, (475, 750, 491, 115), "INICIAR", tema.GRADIENTE_INICIAR, tema.NEGRO, 4,
+                                           tam_texto=96)
+        self.btn_iniciar_inst.dibujar(p)
 
-        # Botón Volver (X)
-        self.btn_volver_inst = BotonModerno(
-            (rect_win.x + 15, rect_win.y + 15, 36, 36), "X",
-            color_base=(200, 40, 50), fuente=self.fuente_sub
-        )
-        self.btn_volver_inst.dibujar(self.pantalla)
+        # Cancelar la configuración y volver al menú (CU-01 A y CU-04 B); también con Escape
+        self.btn_volver_inst = BotonModerno(tema.R(p, 1260, 98, 60, 60), "X", color_base=tema.ROJO_BORDE,
+                                            color_hover=(255, 60, 60), color_borde=tema.NEGRO,
+                                            fuente=tema.fuente(tema.T(p, 36)))
+        self.btn_volver_inst.dibujar(p)
 
-    def _cambiar_color_jugador(self, idx: int):
-        todos = Color.obtener_todos()
-        idx_actual = todos.index(self.colores[idx])
-        nuevo_color = todos[(idx_actual + 1) % len(todos)]
+    def _cambiar_color(self, i, paso):
+        # CU-04: las flechas recorren los colores y se asigna el siguiente disponible.
+        orden = list(Color)
+        disponibles = self.gestor.seleccionarColores()
+        actual = orden.index(self.colores[i]) if self.colores[i] in orden else 0
+        for k in range(1, len(orden)):
+            candidato = orden[(actual + paso * k) % len(orden)]
+            if candidato in disponibles:
+                exito, mensaje = self.gestor.seleccionarColor(candidato, i)
+                if exito:
+                    self.colores[i] = candidato
+                self.mensaje_error = "" if exito else mensaje
+                return
+        # CU-04, alternativa A: no queda ningún otro color libre
+        self.mensaje_error = "No hay otro color disponible: todos están asignados."
 
-        for otro_idx in range(self.cant_jugadores):
-            if otro_idx != idx and self.colores[otro_idx] == nuevo_color:
-                self.colores[otro_idx] = self.colores[idx]
-                break
-        self.colores[idx] = nuevo_color
+    def _alternar_bot(self, i):
+        self.es_bot_lista[i] = not self.es_bot_lista[i]
+        if self.es_bot_lista[i]:
+            self.nombres[i] = f"Bot {i + 1}"
+        elif self.nombres[i].startswith("Bot"):
+            self.nombres[i] = f"Jugador {i + 1}"
+        self.mensaje_error = ""
 
     def manejar_evento(self, evento):
 
         if evento.type == pygame.MOUSEBUTTONDOWN and evento.button == 1:
             pos = evento.pos
 
+            # CU-02: la cantidad la valida el GameManager (mínimo 2, máximo 4)
+            cambio = 0
             if hasattr(self, 'btn_menos_inst') and self.btn_menos_inst.es_cliqueado(evento):
-                if self.cant_jugadores > 2:
-                    self.cant_jugadores -= 1
-                    self.mensaje_error = ""
-
+                cambio = -1
             elif hasattr(self, 'btn_mas_inst') and self.btn_mas_inst.es_cliqueado(evento):
-                if self.cant_jugadores < 4:
-                    self.cant_jugadores += 1
-                    self.mensaje_error = ""
+                cambio = 1
+            if cambio:
+                self._sincronizar_partida()
+                exito, mensaje = self.gestor.configurarCantidadJugadores(self.cant_jugadores + cambio)
+                self.mensaje_error = "" if exito else mensaje
+                if exito:
+                    self.cant_jugadores += cambio
+                    if cambio > 0:
+                        # El jugador nuevo recibe un color libre (lo puede cambiar con las flechas)
+                        nuevo = self.cant_jugadores - 1
+                        exito, _ = self.gestor.seleccionarColor(self.colores[nuevo], nuevo)
+                        if not exito:
+                            self.colores[nuevo] = self.gestor.seleccionarColores()[0]
+                            self.gestor.seleccionarColor(self.colores[nuevo], nuevo)
+                return
 
-            color_clickeado = False
-            for i, r_col in enumerate(self.rects_colores):
-                if r_col.collidepoint(pos):
-                    self._cambiar_color_jugador(i)
-                    self.mensaje_error = ""
-                    color_clickeado = True
-                    break
-
-            # Clic en flechas de píldoras
+            # CU-04: las flechas de cada píldora cambian el color del jugador
             for i, r_l in enumerate(self.rects_arrow_left):
                 if r_l.collidepoint(pos):
-                    self.es_bot_lista[i] = not self.es_bot_lista[i]
-                    if self.es_bot_lista[i]:
-                        self.nombres[i] = f"Bot {i + 1}"
-                    else:
-                        if self.nombres[i].startswith("Bot"):
-                            self.nombres[i] = f"Jugador {i + 1}"
-                    self.mensaje_error = ""
-
+                    self._cambiar_color(i, -1)
+                    return
             for i, r_r in enumerate(self.rects_arrow_right):
                 if r_r.collidepoint(pos):
-                    self.es_bot_lista[i] = not self.es_bot_lista[i]
-                    if self.es_bot_lista[i]:
-                        self.nombres[i] = f"Bot {i + 1}"
-                    else:
-                        if self.nombres[i].startswith("Bot"):
-                            self.nombres[i] = f"Jugador {i + 1}"
-                    self.mensaje_error = ""
+                    self._cambiar_color(i, 1)
+                    return
 
-            if not color_clickeado:
-                self.campo_activo = None
-                for idx, r_nom in enumerate(self.rects_nombres):
-                    if r_nom.collidepoint(pos):
-                        self.campo_activo = idx
-                        break
+            # Etiqueta BOT/HUM: alterna entre jugador humano y bot
+            for i, r_t in enumerate(getattr(self, "rects_tipo", [])):
+                if r_t.collidepoint(pos):
+                    self._alternar_bot(i)
+                    return
+
+            self.campo_activo = None
+            for idx, r_nom in enumerate(self.rects_nombres):
+                if r_nom.collidepoint(pos):
+                    self.campo_activo = idx
+                    break
 
             if hasattr(self, 'btn_iniciar_inst') and self.btn_iniciar_inst.es_cliqueado(evento):
-                if self._validar_configuracion():
-                    self._crear_y_comenzar_partida()
+                self._crear_y_comenzar_partida()
 
             elif hasattr(self, 'btn_volver_inst') and self.btn_volver_inst.es_cliqueado(evento):
+                # CU-01 y CU-04, alternativa cancelar: se descartan los datos y se vuelve al menú
+                self.mensaje_error = ""
                 self.gestor.cancelarSeleccionColores()
+                self.interfaz.ir_a("MENU")
+
+        elif evento.type == pygame.KEYDOWN and evento.key == pygame.K_ESCAPE and self.campo_activo is None:
+            self.mensaje_error = ""
+            self.gestor.cancelarSeleccionColores()
+            self.interfaz.ir_a("MENU")
 
         elif evento.type == pygame.KEYDOWN and self.campo_activo is not None:
             idx = self.campo_activo
@@ -275,43 +226,21 @@ class PantallaConfiguracion:
                 if len(self.nombres[idx]) < 12 and evento.unicode.isprintable():
                     self.nombres[idx] += evento.unicode
 
-    def _validar_configuracion(self) -> bool:
-        nombres_activos = [self.nombres[i].strip() for i in range(self.cant_jugadores)]
-        for i, nom in enumerate(nombres_activos):
-            if not nom:
-                self.mensaje_error = f"El nombre del Jugador {i + 1} no puede estar vacío."
-                return False
-
-        if len(nombres_activos) != len(set(nombres_activos)):
-            self.mensaje_error = "No se permiten nombres repetidos."
-            return False
-
-        colores_activos = [self.colores[i] for i in range(self.cant_jugadores)]
-        if len(colores_activos) != len(set(colores_activos)):
-            self.mensaje_error = "Cada jugador debe tener un color diferente."
-            return False
-
-        self.mensaje_error = ""
-        return True
-
     def _crear_y_comenzar_partida(self):
-        partida = self.gestor.partidaActual
-        if not partida:
-            from modelos.partida import Partida
-            partida = Partida()
-            self.gestor.partidaActual = partida
-
-        partida.configurarCantidadJugadores(self.cant_jugadores)
-        partida.jugadores = []
-
-        for i in range(self.cant_jugadores):
-            nom = self.nombres[i].strip()
-            if self.es_bot_lista[i] and "Bot" not in nom:
-                nom = f"Bot {nom}"
-            jugador = Jugador(
-                nombre=nom,
-                color=self.colores[i]
-            )
-            partida.jugadores.append(jugador)
-
+        # DS N1: se configura una partida nueva con la cantidad, los nombres (CU-03) y los
+        # colores (CU-04) de la pantalla; DS N5: el GameManager la valida e inicia.
+        self.gestor.cancelarPartida()
         self.gestor.iniciarPartida()
+        self.gestor.configurarCantidadJugadores(self.cant_jugadores)
+        for i in range(self.cant_jugadores):
+            exito, mensaje = self.gestor.registrarNombre(None if self.es_bot_lista[i] else self.nombres[i], i)
+            if exito:
+                exito, mensaje = self.gestor.seleccionarColor(self.colores[i], i)
+            if not exito:
+                self.mensaje_error = mensaje
+                return
+
+        exito, mensaje = self.gestor.iniciarPartida()
+        self.mensaje_error = "" if exito else mensaje
+        if exito:
+            self.interfaz.ir_a("JUEGO")

@@ -6,8 +6,7 @@ el modo Pantalla Completa (Fullscreen / Redimensionable con F11) y redirige even
 """
 
 import pygame
-from logica.gestor_partida import GestorPartida
-from persistencia.persistencia import Persistencia
+from logica.game_manager import GameManager
 from interfaz.menu_principal import MenuPrincipal
 from interfaz.configuracion import PantallaConfiguracion
 from interfaz.pantalla_continuar import PantallaContinuar
@@ -35,17 +34,26 @@ class InterfazGrafica:
 
         self.particulas = SistemaParticulas()
 
-        self.gestor = GestorPartida()
-        self.persistencia = Persistencia()
+        self.gestor = GameManager()
 
-        self.menu_principal = MenuPrincipal(self.pantalla, self.gestor, self.persistencia, self)
-        self.pantalla_config = PantallaConfiguracion(self.pantalla, self.gestor)
-        self.pantalla_continuar = PantallaContinuar(self.pantalla, self.gestor, self.persistencia)
+        # Pantalla que se muestra: la navegación es responsabilidad de la vista,
+        # el GameManager solo resuelve las acciones del jugador.
+        self.estado = "MENU"
+        self.estado_anterior = "MENU"
+
+        self.menu_principal = MenuPrincipal(self.pantalla, self.gestor, self)
+        self.pantalla_config = PantallaConfiguracion(self.pantalla, self.gestor, self)
+        self.pantalla_continuar = PantallaContinuar(self.pantalla, self.gestor, self)
         self.pantalla_juego = PantallaJuego(self.pantalla, self.gestor, self)
-        self.pantalla_pausa = PantallaPausa(self.pantalla, self.gestor, self.persistencia)
-        self.pantalla_reglas = PantallaReglas(self.pantalla, self.gestor)
-        self.pantalla_stats = PantallaEstadisticas(self.pantalla, self.gestor)
-        self.pantalla_final = PantallaFinal(self.pantalla, self.gestor)
+        self.pantalla_pausa = PantallaPausa(self.pantalla, self.gestor, self)
+        self.pantalla_reglas = PantallaReglas(self.pantalla, self.gestor, self)
+        self.pantalla_stats = PantallaEstadisticas(self.pantalla, self.gestor, self)
+        self.pantalla_final = PantallaFinal(self.pantalla, self.gestor, self)
+
+    def ir_a(self, estado):
+        """Cambia de pantalla recordando la anterior (para volver de Reglas y Estadísticas)."""
+        self.estado_anterior = self.estado
+        self.estado = estado
 
     def toggle_pantalla_completa(self):
         self.pantalla_completa = not self.pantalla_completa
@@ -90,7 +98,7 @@ class InterfazGrafica:
                 self._actualizar_referencias_pantalla()
 
 
-            estado = self.gestor.estado
+            estado = self.estado
 
             if estado == "MENU":
                 self.menu_principal.manejar_evento(evento)
@@ -111,7 +119,7 @@ class InterfazGrafica:
 
     def _actualizar_y_dibujar(self):
         self.pantalla.fill((46, 21, 90))
-        estado = self.gestor.estado
+        estado = self.estado
 
         if estado == "MENU":
             self.menu_principal.dibujar()
@@ -125,11 +133,11 @@ class InterfazGrafica:
             self.pantalla_juego.dibujar()
             self.pantalla_pausa.dibujar()
         elif estado == "REGLAS":
-            if self.gestor.estado_anterior in ("JUEGO", "PAUSA", "FINAL"):
+            if self.estado_anterior in ("JUEGO", "PAUSA", "FINAL"):
                 self.pantalla_juego.dibujar()
             self.pantalla_reglas.dibujar()
         elif estado == "ESTADISTICAS":
-            if self.gestor.estado_anterior in ("JUEGO", "PAUSA", "FINAL"):
+            if self.estado_anterior in ("JUEGO", "PAUSA", "FINAL"):
                 self.pantalla_juego.dibujar()
             self.pantalla_stats.dibujar()
         elif estado == "FINAL":

@@ -1,5 +1,5 @@
 """
-Pruebas de integración: partidas completas jugadas por bots, sin interfaz.
+Pruebas de integración: partidas completas jugadas al azar, sin interfaz.
 
 En lugar de verificar un caso puntual, se juegan muchas partidas y en cada
 jugada se controla que el estado del juego siga siendo coherente
@@ -10,20 +10,18 @@ import random
 
 import pytest
 
-from modelos.tablero import Tablero
-from modelos.partida import Partida
+from persistencia.persistencia_de_datos import PersistenciaDeDatos
+from conftest import casilla_global
 
 MAX_TIRADAS = 5000
 
 
 def jugar_tirada(p):
-    """Una tirada completa: tirar el dado y, si se puede, mover lo que elija el bot."""
-    p.tirarDado()
-    if p.esperando_movimiento:
-        jugador = p.obtenerJugadorActual()
+    """Una tirada completa: tirar el dado y, si se puede, mover una ficha habilitada al azar."""
+    p.lanzarDado()
+    if p.dado:
         movimientos = p.obtenerMovimientosValidos()
-        ficha = jugador.seleccionar_mejor_movimiento(movimientos, p.tablero)
-        assert ficha in movimientos
+        ficha = random.choice(movimientos)
         assert p.moverFicha(ficha)
 
 
@@ -38,13 +36,12 @@ def verificar_invariantes(p):
             assert f.enMeta == (f.posicion == 58)
             assert f.color == j.color
             if 1 <= f.posicion <= 51:
-                casilla = p.tablero.obtener_casilla_global(f)
+                casilla = casilla_global(f.color, f.posicion)
+                assert f in p.tablero.Casilleros[casilla]
                 ocupadas.setdefault(casilla, set()).add(f.color)
-    # Dos colores distintos solo pueden compartir casilla si es segura
-    # (en cualquier otra, el que llegó último tendría que haber capturado).
+    # Dos colores distintos no pueden compartir casilla: el que llegó último captura.
     for casilla, colores in ocupadas.items():
-        if len(colores) > 1:
-            assert casilla in Tablero.CASILLAS_SEGURAS, f"casilla {casilla} con {colores}"
+        assert len(colores) == 1, f"casilla {casilla} con {colores}"
 
 
 @pytest.mark.parametrize("cantidad", [2, 3, 4])
@@ -62,13 +59,15 @@ def test_partidas_completas_entre_bots_terminan_bien(crear_partida, cantidad, se
     assert p.ganador is not None and p.ganador.todasLasFichasEnMeta()
 
 
-def test_guardar_a_mitad_de_partida_y_seguir_da_el_mismo_resultado(crear_partida):
+def test_guardar_a_mitad_de_partida_y_seguir_da_el_mismo_resultado(crear_partida, tmp_path):
     """Si se guarda y se carga a mitad de partida, el resto del juego no cambia."""
     random.seed(7)
     original = crear_partida(4, bots=True)
     for _ in range(150):
         jugar_tirada(original)
-    cargada = Partida.desde_diccionario(original.a_diccionario())
+    persistencia = PersistenciaDeDatos(str(tmp_path / "partida.json"))
+    persistencia.guardarPartida(original)
+    cargada, _ = persistencia.cargarPartida()
 
     estado_rng = random.getstate()
     while original.estado == "EN_CURSO":
@@ -77,4 +76,6 @@ def test_guardar_a_mitad_de_partida_y_seguir_da_el_mismo_resultado(crear_partida
     while cargada.estado == "EN_CURSO":
         jugar_tirada(cargada)
 
-    assert cargada.a_diccionario() == original.a_diccionario()
+    a, b = cargada.guardar(), original.guardar()
+    a.pop("tiempoTranscurrido"), b.pop("tiempoTranscurrido")
+    assert a == b

@@ -1,126 +1,102 @@
-import weakref
 from modelos.color import Color
 from modelos.ficha import Ficha
 
-_tablero_jugadores = weakref.WeakKeyDictionary()
-# Índice de cada color en self.inicio (salidas 0, 13, 26, 39), en el sentido del recorrido:
-# ROJO sale a la izquierda, VERDE arriba, AMARILLO a la derecha y AZUL abajo.
-_COLOR_IDX = {Color.ROJO: 0, Color.VERDE: 1, Color.AMARILLO: 2, Color.AZUL: 3}
-_CASILLAS_SEGURAS = {0, 8, 13, 21, 26, 34, 39, 47}
-
 
 class Tablero:
+    """Circuito común de 52 casilleros.
+
+    Cada ficha guarda su posición relativa a su propio recorrido (0 base, 1 a 51
+    circuito, 52 a 57 pasillo de su color, 58 meta). El casillero del circuito
+    donde está se calcula con la salida de su color (inicio) y el recorrido termina
+    en el último casillero antes de su pasillo (fin).
+    """
 
     def __init__(self):
-        self.Casilleros = [[0 for _ in range(4)] for _ in range(52)]
-        self.inicio = [0, 13, 26, 39]
-        self.fin = [51, 12, 25, 38]
-        _tablero_jugadores[self] = []
+        # Casilleros[i] = fichas que están en el casillero i del circuito
+        self.Casilleros = [[] for _ in range(52)]
+        # Una entrada por color, en el orden de Color (ROJO, AZUL, AMARILLO, VERDE)
+        self.inicio = [0, 39, 26, 13]
+        self.fin = [50, 37, 24, 11]
 
     def inicializar(self) -> None:
-        self.Casilleros = [[0 for _ in range(4)] for _ in range(52)]
-        self.inicio = [0, 13, 26, 39]
-        self.fin = [51, 12, 25, 38]
-        _tablero_jugadores[self] = []
+        self.Casilleros = [[] for _ in range(52)]
+        self.inicio = [0, 39, 26, 13]
+        self.fin = [(salida - 2) % 52 for salida in self.inicio]
 
-    def obtenerMovimientosValidos(self, jugador, valorDado: int = 0) -> list[Ficha]:
-        if not jugador:
-            return []
-        return [f for f in jugador.obtenerFichas() if self.puedeMover(f, valorDado)]
+    def obtenerMovimientosValidos(self, jugador, valorDado: int) -> list[Ficha]:
+        return [ficha for ficha in jugador.obtenerFichas() if self.puedeMover(ficha, valorDado)]
 
-    def puedeMover(self, ficha: Ficha, valorDado: int = 0) -> bool:
+    def puedeMover(self, ficha: Ficha, valorDado: int) -> bool:
+        if ficha.enMeta or valorDado <= 0:
+            return False
+        c = list(Color).index(ficha.color)
         if ficha.enBase:
-            return valorDado == 6
-        if ficha.enMeta:
-            return False
-        if ficha.posicion + valorDado > 58:
-            return False
+            # CU-07: se sale con 6 y solo si no hay una barrera en la casilla de salida.
+            casillero = self.Casilleros[self.inicio[c]]
+            return valorDado == 6 and not any(
+                sum(1 for f in casillero if f.color == otro.color) >= 2 for otro in casillero)
+        if self.calcularDestino(ficha, valorDado) != ficha.posicion + valorDado:
+            return False    # para entrar a la meta hace falta el número exacto
 
-        # Comprobación de barreras directamente en la trayectoria
-        pos_actual = ficha.posicion
-        idx_color = _COLOR_IDX.get(ficha.color, 0)
-        salida_origen = self.inicio[idx_color]
-        jugadores = _tablero_jugadores.get(self, [])
-
-        for paso in range(1, valorDado + 1):
-            pos_intermedia = pos_actual + paso
-            if pos_intermedia <= 51:
-                casilla_intermedia = (salida_origen + (pos_intermedia - 1)) % 52
-                conteo_por_color = {}
-                for jug in jugadores:
-                    if jug.color != ficha.color:
-                        for f in jug.fichas:
-                            if not f.enBase and not f.enMeta and f.posicion <= 51:
-                                idx_rival = _COLOR_IDX.get(f.color, 0)
-                                c_rival = (self.inicio[idx_rival] + (f.posicion - 1)) % 52
-                                if c_rival == casilla_intermedia:
-                                    conteo_por_color[f.color] = conteo_por_color.get(f.color, 0) + 1
-                if any(cnt >= 2 for cnt in conteo_por_color.values()):
-                    return False
-
+        # Recorre los casilleros que pisa: ninguna ficha atraviesa ni ocupa una barrera.
+        indice = (self.inicio[c] + ficha.posicion - 1) % 52
+        for _ in range(valorDado):
+            if ficha.posicion > 51 or indice == self.fin[c]:
+                break       # entra al pasillo de su color, donde no hay barreras rivales
+            indice = (indice + 1) % 52
+            casillero = self.Casilleros[indice]
+            if any(sum(1 for f in casillero if f.color == otro.color) >= 2 for otro in casillero):
+                return False
         return True
 
-    def calcularDestino(self, ficha: Ficha, valorDado: int = 0) -> int:
+    def calcularDestino(self, ficha: Ficha, valorDado: int) -> int:
         if ficha.enBase:
             return 1 if valorDado == 6 else 0
         return min(58, ficha.posicion + valorDado)
 
-    def sacarFicha(self, ficha: Ficha) -> None:
+    def sacarFicha(self, ficha: Ficha) -> bool:
+        # CU-07: con un 6 la ficha pasa de la base a la casilla de salida de su color.
+        if not ficha.enBase:
+            return False
+        ficha.salirBase()
+        self.Casilleros[self.inicio[list(Color).index(ficha.color)]].append(ficha)
+        return True
+
+    def moverFicha(self, ficha: Ficha, destino: int) -> bool:
+        # CU-08: lleva la ficha a la posición destino calculada con calcularDestino.
+        if ficha.enMeta:
+            return False
         if ficha.enBase:
-            ficha.salirBase()
-            self.verificarCaptura(ficha)
+            return destino == 1 and self.sacarFicha(ficha)
+        if destino <= ficha.posicion:
+            return False
+        ficha.mover(destino - ficha.posicion)
+        self.actualizarPosiciones()
+        return True
 
-    def moverFicha(self, ficha: Ficha, destino: int = 0) -> None:
-        if not ficha:
-            return
-        if ficha.enBase and destino in (6, 1):
-            self.sacarFicha(ficha)
-            return
-
-        pasos = destino if destino <= 6 else (destino - ficha.posicion)
-        if pasos > 0 and self.puedeMover(ficha, pasos):
-            ficha.mover(pasos)
-            self.verificarCaptura(ficha)
-            self.verificarMeta(ficha)
+    def actualizarPosiciones(self) -> None:
+        # DS N9: vuelve a ubicar cada ficha del circuito según su posición actual;
+        # las que volvieron a la base o entraron al pasillo dejan el circuito.
+        fichas = [f for casillero in self.Casilleros for f in casillero]
+        self.Casilleros = [[] for _ in range(52)]
+        for f in fichas:
+            if not f.enBase and not f.enMeta and 1 <= f.posicion <= 51:
+                c = list(Color).index(f.color)
+                self.Casilleros[(self.inicio[c] + f.posicion - 1) % 52].append(f)
 
     def verificarCaptura(self, ficha: Ficha) -> bool:
+        # CU-09: la ficha que llega a un casillero manda a la base a las rivales.
         if ficha.enBase or ficha.enMeta or ficha.posicion > 51:
             return False
-
-        idx_color = _COLOR_IDX.get(ficha.color, 0)
-        c_global = (self.inicio[idx_color] + (ficha.posicion - 1)) % 52
-        if c_global in _CASILLAS_SEGURAS:
-            return False
-
-        capturo = False
-        jugadores = _tablero_jugadores.get(self, [])
-        for jug in jugadores:
-            if jug.color != ficha.color:
-                for f_rival in jug.fichas:
-                    if not f_rival.enBase and not f_rival.enMeta and f_rival.posicion <= 51:
-                        idx_rival = _COLOR_IDX.get(f_rival.color, 0)
-                        c_rival = (self.inicio[idx_rival] + (f_rival.posicion - 1)) % 52
-                        if c_rival == c_global:
-                            self.enviarFichaABase(f_rival)
-                            capturo = True
-        return capturo
+        indice = (self.inicio[list(Color).index(ficha.color)] + ficha.posicion - 1) % 52
+        rivales = [f for f in self.Casilleros[indice] if f.color != ficha.color]
+        for rival in rivales:
+            self.enviarFichaABase(rival)
+        return bool(rivales)
 
     def enviarFichaABase(self, ficha: Ficha) -> None:
         ficha.volverBase()
+        self.actualizarPosiciones()
 
     def verificarMeta(self, ficha: Ficha) -> bool:
-        if ficha.posicion == 58:
-            ficha.llegarMeta()
-            return True
-        return False
-
-    def __setattr__(self, name, value):
-        if name == "jugadores":
-            _tablero_jugadores[self] = value
-        else:
-            super().__setattr__(name, value)
-
-    def __getattr__(self, name):
-        if name == "jugadores":
-            return _tablero_jugadores.get(self, [])
-        raise AttributeError(f"'{type(self).__name__}' object has no attribute '{name}'")
+        return ficha.enMeta

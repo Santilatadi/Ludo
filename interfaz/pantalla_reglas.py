@@ -1,126 +1,92 @@
 """
 Modulo pantalla_reglas.py
-Dibuja e interactúa con la Ventana de Reglas del Ludo.
-Muestra todas las reglas detalladas con alta legibilidad, estilización glassmorphism y soporte para scroll.
+Frame "Reglas" del Figma (CU-06): ventana con degradé azul y borde rojo, título
+"Reglas del juego" en amarillo, una X para cerrar y las reglas con desplazamiento.
 """
 
-import os
-import sys
 import pygame
 
-directorio_raiz = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-if directorio_raiz not in sys.path:
-    sys.path.insert(0, directorio_raiz)
-
-from logica.reglas import Reglas
-from interfaz.efectos import dibujar_panel_glassmorphism, dibujar_texto_glow
-from interfaz.componentes import BotonModerno
+from interfaz import tema
 
 
 class PantallaReglas:
 
-    def __init__(self, pantalla, gestor_partida):
+    def __init__(self, pantalla, game_manager, interfaz=None):
         self.pantalla = pantalla
-        self.gestor = gestor_partida
+        self.gestor = game_manager
+        self.interfaz = interfaz
+        self.texto_reglas = ""
         self.scroll_y = 0
+        self.max_scroll = 0
 
-        ruta_fuente = "assets/font.ttf"
-        if os.path.exists(ruta_fuente):
-            self.fuente_titulo = pygame.font.Font(ruta_fuente, 38)
-            self.fuente_seccion = pygame.font.Font(ruta_fuente, 18)
-            self.fuente_texto = pygame.font.Font(ruta_fuente, 15)
-        else:
-            self.fuente_titulo = pygame.font.SysFont("Impact", 36, bold=True)
-            self.fuente_seccion = pygame.font.SysFont("Arial", 18, bold=True)
-            self.fuente_texto = pygame.font.SysFont("Arial", 15, bold=True)
+    def abrir(self):
+        # CU-06: el GameManager obtiene las reglas de la persistencia
+        self.scroll_y = 0
+        self.texto_reglas = self.gestor.consultarReglas()
+
+    def _cerrar(self):
+        self.gestor.volverDeReglas()
+        self.interfaz.estado = self.interfaz.estado_anterior
 
     def dibujar(self):
-        ancho, alto = self.pantalla.get_size()
+        p = self.pantalla
+        tema.oscurecer(p)
+        tema.panel_figma(p, 295, 57, 800, 800, tema.GRADIENTE, tema.ROJO_BORDE, 4)
+        tema.texto_figma(p, "Reglas del juego", 0, 0, 48, (247, 255, 6), (173, 66, 4), 4, centrado_en=(681.5, 124.5))
+        self.btn_cerrar_inst = tema.cruz_figma(p, 1020, 71)
+        tema.linea_figma(p, 299, 193, 796)
 
-        # Capa translúcida sobre la pantalla de juego
-        superficie_oscura = pygame.Surface((ancho, alto), pygame.SRCALPHA)
-        superficie_oscura.fill((5, 10, 25, 190))
-        self.pantalla.blit(superficie_oscura, (0, 0))
+        if not self.texto_reglas:
+            # CU-06 A: no se pudieron cargar las reglas; se vuelve a intentar
+            self.texto_reglas = self.gestor.consultarReglas()
+        lineas = (self.texto_reglas or "1. No se pudieron cargar las reglas.\n   Reintentando...").split("\n")
 
-        # Ventana Modal Glassmorphism
-        w_box, h_box = min(660, ancho - 40), min(520, alto - 40)
-        rect_box = pygame.Rect((ancho - w_box) // 2, (alto - h_box) // 2, w_box, h_box)
-
-        dibujar_panel_glassmorphism(
-            self.pantalla, rect_box,
-            color_bg=(16, 35, 95, 240),
-            color_borde=(255, 215, 0, 220),
-            radio=20, grosor_borde=3
-        )
-
-        # Encabezado "REGLAS DEL JUEGO"
-        dibujar_texto_glow(
-            self.pantalla, "REGLAS DEL JUEGO", self.fuente_titulo,
-            ancho // 2, rect_box.y + 40,
-            color_texto=(255, 220, 0), color_resplandor=(255, 120, 0), centro=True
-        )
-
-        # Botón X de cerrar en la esquina superior derecha
-        self.btn_cerrar_inst = BotonModerno(
-            (rect_box.right - 45, rect_box.y + 15, 34, 34), "X",
-            color_base=(220, 40, 50), fuente=self.fuente_seccion
-        )
-        self.btn_cerrar_inst.dibujar(self.pantalla)
-
-        # Línea divisoria roja horizontal
-        y_div = rect_box.y + 75
-        pygame.draw.line(self.pantalla, (220, 20, 60), (rect_box.x + 20, y_div), (rect_box.right - 20, y_div), 2)
-
-        # Área recortada (Clip) para las reglas con scroll
-        rect_clip = pygame.Rect(rect_box.x + 25, y_div + 15, w_box - 50, h_box - 105)
-        self.pantalla.set_clip(rect_clip)
-
-        lineas_reglas = Reglas.obtener_texto_reglas()
-
-        y_offset = rect_clip.y - self.scroll_y
-        max_y_alcanzado = y_offset
-
-        for linea in lineas_reglas:
+        zona = tema.R(p, 330, 210, 740, 630)
+        p.set_clip(zona)
+        y = zona.y - self.scroll_y
+        alto_titulo, alto_linea = tema.T(p, 40), tema.T(p, 32)
+        for linea in lineas:
             if not linea.strip():
-                y_offset += 12
+                y += tema.T(p, 14)
                 continue
-
-            # Título de sección (ej: "1. Objetivo del Juego:")
             if linea[0].isdigit() and "." in linea[:3]:
-                dibujar_texto_glow(
-                    self.pantalla, linea, self.fuente_seccion,
-                    rect_clip.x + 5, y_offset,
-                    color_texto=(255, 220, 0), color_resplandor=(0, 0, 0)
-                )
-                y_offset += 28
+                surf = tema.render_texto(linea, tema.T(p, 32), (247, 255, 6), tema.NEGRO, tema.T(p, 2))
+                p.blit(surf, (zona.x, y))
+                y += alto_titulo
             else:
-                # Viñeta / Detalle
-                txt_surf = self.fuente_texto.render(linea.strip(), True, (240, 240, 255))
-                self.pantalla.blit(txt_surf, (rect_clip.x + 25, y_offset))
-                y_offset += 24
+                for parte in self._partir(linea.strip(), tema.fuente(tema.T(p, 24)), zona.width - tema.T(p, 30)):
+                    surf = tema.render_texto(parte, tema.T(p, 24), tema.BLANCO, tema.NEGRO, tema.T(p, 2))
+                    p.blit(surf, (zona.x + tema.T(p, 26), y))
+                    y += alto_linea
+        p.set_clip(None)
 
-            max_y_alcanzado = y_offset
+        total = y + self.scroll_y - zona.y
+        self.max_scroll = max(0, total - zona.height + tema.T(p, 20))
+        if self.max_scroll:
+            barra = pygame.Rect(zona.right + tema.T(p, 6), zona.y, tema.T(p, 10), zona.height)
+            pygame.draw.rect(p, tema.NEGRO, barra, border_radius=barra.width // 2)
+            alto = max(tema.T(p, 40), int(zona.height * zona.height / total))
+            y0 = zona.y + int((zona.height - alto) * self.scroll_y / self.max_scroll)
+            pygame.draw.rect(p, tema.BLANCO, (barra.x + 2, y0, barra.width - 4, alto), border_radius=barra.width // 2)
 
-        # Desactivar clip
-        self.pantalla.set_clip(None)
-
-        # Indicador visual de scroll
-        altura_total = max_y_alcanzado - (rect_clip.y - self.scroll_y)
-        if altura_total > rect_clip.height:
-            self.max_scroll = max(0, altura_total - rect_clip.height + 20)
-            sb_w = 8
-            sb_h = max(24, int((rect_clip.height / altura_total) * rect_clip.height))
-            sb_y = rect_clip.y + int((self.scroll_y / self.max_scroll) * (rect_clip.height - sb_h))
-            pygame.draw.rect(self.pantalla, (40, 60, 100), (rect_box.right - 16, rect_clip.y, sb_w, rect_clip.height), border_radius=4)
-            pygame.draw.rect(self.pantalla, (255, 215, 0), (rect_box.right - 16, sb_y, sb_w, sb_h), border_radius=4)
-        else:
-            self.max_scroll = 0
+    def _partir(self, texto, fuente, ancho_max):
+        palabras, lineas, actual = texto.split(), [], ""
+        for palabra in palabras:
+            prueba = f"{actual} {palabra}".strip()
+            if fuente.size(prueba)[0] <= ancho_max or not actual:
+                actual = prueba
+            else:
+                lineas.append(actual)
+                actual = palabra
+        if actual:
+            lineas.append(actual)
+        return lineas
 
     def manejar_evento(self, evento):
         if evento.type == pygame.MOUSEBUTTONDOWN:
             if evento.button == 1:
-                if hasattr(self, 'btn_cerrar_inst') and self.btn_cerrar_inst.es_cliqueado(evento):
-                    self.gestor.volverDeReglas()
+                if hasattr(self, 'btn_cerrar_inst') and self.btn_cerrar_inst.collidepoint(evento.pos):
+                    self._cerrar()
             elif evento.button == 4:  # Scroll Up
                 self.scroll_y = max(0, self.scroll_y - 25)
             elif evento.button == 5:  # Scroll Down
@@ -128,7 +94,7 @@ class PantallaReglas:
                     self.scroll_y = min(self.max_scroll, self.scroll_y + 25)
         elif evento.type == pygame.KEYDOWN:
             if evento.key in (pygame.K_ESCAPE, pygame.K_RETURN):
-                self.gestor.volverDeReglas()
+                self._cerrar()
             elif evento.key == pygame.K_UP:
                 self.scroll_y = max(0, self.scroll_y - 25)
             elif evento.key == pygame.K_DOWN:
