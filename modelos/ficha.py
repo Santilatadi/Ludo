@@ -61,3 +61,8 @@ class Ficha:
         # Marca que está dentro de la meta
         self.enMeta = True
 
+    # Propiedad de compatibilidad para meta
+    @property
+    def meta(self) -> bool:
+        return self.enMeta
+

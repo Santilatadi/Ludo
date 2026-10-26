@@ -470,7 +470,16 @@ class Partida:
     # Alias por compatibilidad
     reanudar = reanudarPartida
 
-            
+    def solicitarConfiguracion(self) -> None:      
+        self.iniciarConfiguracion()
+        return True
+
+    def configurarCantidad(self, cantidad: int) -> bool:  
+        if cantidad in (2, 3, 4):
+            self.cantidadJugadores = cantidad
+            self.estado = "CONFIGURACION"
+            return True
+        return False
 
     # Guarda el tiempo transcurrido acumulado y detiene el reloj
     def conservarEstado(self) -> None:
@@ -481,6 +490,40 @@ class Partida:
             self.tiempoTranscurrido += int(time.time() - self._inicioTiempo)
         # Apaga la marca de tiempo
         self._inicioTiempo = None
+
+    def guardarCantidad(self) -> dict:
+        return {
+            "cantidadJugadores": self.cantidadJugadores,
+            "estado": self.estado,
+            "turnoActual": self.turnoActual,
+            "dado": self.dado,
+            "seisConsecutivos": self._seisConsecutivos,
+            "turnosJugados": self.turnosJugados,
+            "tiempoTranscurrido": self.tiempoTranscurrido,
+            "jugadores": [
+                {
+                    "nombre": j.nombre,
+                    "color": j.color.name if j.color else None,
+                    "movimientos": j.movimientos,
+                    "puntaje": j.puntaje,
+                    "fichas": [
+                        {
+                            "posicion": f.posicion,
+                            "enBase": f.enBase,
+                            "meta": getattr(f, "enMeta", False),
+                            "color": f.color.name
+                        } for f in j.obtenerFichas()
+                    ]
+                } for j in self.jugadores
+            ]
+        }
+
+    def verificarCantidad(self) -> bool:
+        if(self.cantidadJugadores in (2, 3, 4)):
+            print("ya esta el minimo")
+            return True
+        print(" falta jugadores")
+        return False
 
     # Empaqueta todos los datos de la partida en un diccionario para guardarlo en un archivo
     def guardar(self) -> dict:

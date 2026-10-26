@@ -133,11 +133,11 @@ class Tablero:
 
     # Pausa las acciones del tablero
     def pausarTablero(self) -> None:
-        pass
+        self.pausado = True
 
     # Reanuda las acciones del tablero
     def reanudarTablero(self) -> None:
-        pass
+        self.pausado = False
 
     # Aliases de compatibilidad
     Pausar_Tablero = pausarTablero
