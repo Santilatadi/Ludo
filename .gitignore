@@ -1,0 +1,6 @@
+partidas_guardadas/
+
+__pycache__/
+*.pyc
+.pytest_cache/
+.venv/

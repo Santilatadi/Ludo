@@ -1,0 +1,23 @@
+Componentes: Se encarga de crear y configurar los botones, sus diseños, rellenos, textos y estilos visuales, siguiendo el diseño de Figma.
+
+Configuración: Se centra en la pantalla donde se configura la partida, permitiendo elegir la cantidad de jugadores, sus nombres y sus colores.
+
+Efectos: Se encarga de la estética del juego, como los destellos, los fondos dinámicos y otros efectos visuales.
+
+Interfaz: Es la encargada principal de controlar la interfaz gráfica. Inicializa la ventana, permite cambiar a pantalla completa, controla el ciclo del programa y decide qué pantalla mostrar.
+
+Menú principal: Se encarga de mostrar el menú principal, con las opciones de nueva partida, continuar partida y salir del programa, junto con la imagen del Ludo.
+
+Pantalla continuar: Muestra las partidas guardadas y permite elegir una para continuar jugando.
+
+Pantalla estadísticas: Muestra las estadísticas de la partida, como el tiempo, los turnos y el puntaje de los jugadores.
+
+Pantalla final: Aparece cuando un jugador gana la partida. Muestra su nombre y permite reiniciar la partida o volver al menú principal.
+
+Pantalla juego: Muestra el tablero, las fichas, los jugadores y el dado. También permite acceder a las reglas y al menú de pausa.
+
+Pantalla pausa: Muestra las opciones para continuar la partida, consultar las estadísticas, reiniciar, ver las reglas, guardar la partida o volver al menú principal.
+
+Pantalla reglas: Muestra las reglas e instrucciones del juego.
+
+Tema: Contiene los colores, las fuentes y las funciones que ajustan los tamaños y las coordenadas de los elementos para adaptar las pantallas al tamaño de la ventana y mantener el diseño de Figma.
