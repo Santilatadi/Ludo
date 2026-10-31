@@ -281,13 +281,46 @@ class Partida:
         # Guarda la hora de inicio para el cronómetro
         self._inicioTiempo = time.time()
 
+
+    # Pausa la partida y guarda el tiempo transcurrido
+    def pausar(self) -> bool:
+        # Solo se puede pausar si la partida está en curso
+        if self.estado == "EN_CURSO":
+            # Calcula cuánto tiempo pasó desde el último inicio si existía
+            if self._inicioTiempo is not None:
+                tiempoJugado = int(time.time() - self._inicioTiempo)
+                # Acumula ese tiempo en el total
+                self.tiempoTranscurrido += tiempoJugado
+            # Apaga la hora de inicio mientras está pausada
+            self._inicioTiempo = None
+            # Cambia el estado a PAUSADA
+            self.estado = "PAUSADA"
+            # Retorna True indicando que se pudo pausar
+            return True
+        # Si no se pudo pausar (porque ya estaba pausada o finalizada), retorna False
+        return False
+
+
+    # Reanuda la partida recuperando el tiempo transcurrido
+    def reanudar(self) -> bool:
+        # Solo se puede reanudar si la partida está pausada o en curso
+        if self.estado in ("PAUSADA", "EN_CURSO"):
+            # Guarda la hora actual para reanudar el cronómetro
+            self._inicioTiempo = time.time()
+            # Cambia el estado a EN_CURSO
+            self.estado = "EN_CURSO"
+            # Retorna True indicando que se pudo reanudar
+            return True
+        # Si no se pudo reanudar (porque no estaba pausada ni en curso), retorna False
+        return False
+
     # Prepara el turno para el primer jugador de la lista
     def establecerPrimerTurno(self) -> None:
         # Pone el índice de turno en 0
         self.turnoActual = 0
         # Selecciona al primer jugador de la lista
         self.jugadorActual = self.jugadores[0] if self.jugadores else None
-        # Pone el dado en 0 (sin tirar)
+        # Pone el dado listo para iniciar (sin tirar)
         self.dado = 0
         # Reinicia el contador de números 6 seguidos
         self._seisConsecutivos = 0
@@ -455,20 +488,14 @@ class Partida:
             # Cambia el estado a PAUSADA
             self.estado = "PAUSADA"
 
-    # Alias por compatibilidad
-    pausar = pausarPartida
-
     # Reanuda la partida pausada y reinicia el cronómetro
     def reanudarPartida(self) -> None:
-        # Si está pausada o en curso:
+        # Si está pausada o en curso:Conf
         if self.estado in ("PAUSADA", "EN_CURSO"):
             # Cambia el estado a EN_CURSO
             self.estado = "EN_CURSO"
             # Registra la hora actual para reanudar el cronómetro
             self._inicioTiempo = time.time()
-
-    # Alias por compatibilidad
-    reanudar = reanudarPartida
 
     def solicitarConfiguracion(self) -> None:      
         self.iniciarConfiguracion()
@@ -479,7 +506,7 @@ class Partida:
             self.cantidadJugadores = cantidad
             self.estado = "CONFIGURACION"
             return True
-        return False
+        return False  
 
     # Guarda el tiempo transcurrido acumulado y detiene el reloj
     def conservarEstado(self) -> None:
@@ -518,12 +545,14 @@ class Partida:
             ]
         }
 
+    #esta funcion permite configurar la cantidad de jugadores que van a jugar la partida.
     def verificarCantidad(self) -> bool:
         if(self.cantidadJugadores in (2, 3, 4)):
-            print("ya esta el minimo")
+            print("El máximo es 4 jugadores")
             return True
-        print(" falta jugadores")
+        print("El mínimo es 2 jugadores")
         return False
+    
 
     # Empaqueta todos los datos de la partida en un diccionario para guardarlo en un archivo
     def guardar(self) -> dict:
@@ -601,7 +630,7 @@ class Partida:
     def recopilarEstadisticas(self) -> str:
         # CU-15: tiempo, turnos y resumen de cada jugador.
         # Toma el tiempo acumulado
-        tiempo = self.tiempoTranscurrido
+        tiempo = int(self.tiempoTranscurrido)
         # Si el cronómetro estaba corriendo, suma los segundos actuales
         if self._inicioTiempo:
             tiempo += int(time.time() - self._inicioTiempo)
@@ -609,8 +638,10 @@ class Partida:
         for jugador in self.jugadores:
             jugador.puntaje = sum(100 if f.enMeta else f.posicion for f in jugador.fichas)
         # Arma las líneas principales del informe
+        minutos = int(tiempo) // 60
+        segundos = int(tiempo) % 60
         lineas = [
-            f"Tiempo transcurrido: {tiempo // 60:02d}:{tiempo % 60:02d}",
+            f"Tiempo transcurrido: {minutos:02d}:{segundos:02d}",
             f"Turnos jugados: {self.turnosJugados}",
             f"Ganador: {self.ganador.nombre if self.ganador else 'En curso'}",
         ]

@@ -399,7 +399,7 @@ class PantallaConfiguracion:
         # Prepara una nueva partida limpia en el gestor
         self.gestor.iniciarPartida()
         # Establece la cantidad de jugadores seleccionada
-        self.gestor.configurarCantidadJugadores(self.cant_jugadores)
+        self.gestor.configurarCantidadJugadores(self.cant_jugadores)    
         # Registra el nombre y color de cada jugador
         for i in range(self.cant_jugadores):
             # Registra el nombre (None si es bot para que use el predeterminado)

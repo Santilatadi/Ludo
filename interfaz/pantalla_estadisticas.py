@@ -66,7 +66,7 @@ class PantallaEstadisticas:
             return
 
         # Lee los segundos transcurridos
-        segundos = partida.tiempoTranscurrido
+        segundos = int(partida.tiempoTranscurrido)
         # Dibuja la caja con el tiempo en formato MM:SS
         self._caja(130, 225, 560, 64, f"Tiempo: {segundos // 60:02d}:{segundos % 60:02d}")
         # Dibuja la caja con el total de turnos jugados

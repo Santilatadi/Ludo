@@ -242,6 +242,20 @@ class GameManager:
         if self.partidaActual:
             self.partidaActual.mantenerPartida()
 
+    def confirmarAbandono(self) -> None:
+        # Si hay partida, la cierra
+        if self.partidaActual:
+            self.partidaActual.cerrarPartida()
+        # Limpia la variable de la partida
+        self.partidaActual = None   
+
+    def cancelarAbandono(self):
+        # Si hay partida, la pausa
+        if self.partidaActual:
+            self.partidaActual.pausar()
+        # Vuelve la referencia a None
+        self.partidaActual = None
+
     # Comprueba si se debe pedir confirmación antes de volver al menú principal
     def volverAlMenuPrinicipal(self) -> bool:
         # CU-12: devuelve True si hay que pedir confirmación (partida activa).

@@ -133,6 +133,8 @@ class PersistenciaDeDatos:
             partida.turnosJugados = datos.get("turnosJugados", 1)
             # Restaura el tiempo transcurrido
             partida.tiempoTranscurrido = datos.get("tiempoTranscurrido", 0)
+            if partida.estado == "EN_CURSO":
+                partida._inicioTiempo = time.time()
 
             # Reconstruye cada jugador con sus datos y fichas
             for datos_jugador in datos["jugadores"]:
